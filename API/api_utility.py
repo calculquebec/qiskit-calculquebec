@@ -47,6 +47,12 @@ class ApiUtility:
                 keys.QUBITS: [instruction.qubits[0]._index],
                 keys.TYPE: (instructions_with_90[instruction.name]+value)
             }
+        elif instruction.name == "measure":
+            operation={
+                keys.QUBITS: [instruction.qubits[0]._index],
+                keys.TYPE: "readout",
+                keys.BITS: [instruction.clbits[0]._index]
+            }
 
         else:
             raise ValueError("This instruction is not supported: ", instruction.name)
@@ -67,6 +73,7 @@ class ApiUtility:
 
         # Initialize the dictionary with fixed bit and qubit counts (adjustable as needed)
         circuit_dict = {
+            keys.TYPE : keys.CIRCUIT,
             keys.BIT_COUNT: 24,  # Adjust as needed for dynamic sizing
             keys.OPERATIONS: [ApiUtility.convert_instruction(operation) for operation in circuit.data],
             keys.QUBIT_COUNT: len(circuit.qubits)  # Number of qubits in the circuit
@@ -168,7 +175,6 @@ instructions : dict[str, str] = {
     "t" : "t",
     "t_dag" : "t_dag",
     "cz" : "cz",
-    "measure": "readout"
 }
 
 instructions_with_90 : dict[str, str] = {
