@@ -20,11 +20,16 @@ class ApiUtility:
             dict: a dictionary representation of the operation that can be read by the Thunderhead API.
         """
         if instruction.name in instructions:
-
-            operation = {
-                keys.QUBITS: [instruction.qubits[0]._index],
-                keys.TYPE: instructions[instruction.name]
-            }
+            if len(instruction.qubits) == 1:
+                operation = {
+                    keys.QUBITS: [instruction.qubits[0]._index],
+                    keys.TYPE: instructions[instruction.name]
+                }
+            else:
+                operation = {
+                    keys.QUBITS:[instruction.qubits[0]._index, instruction.qubits[1]._index],
+                    keys.TYPE: instructions[instruction.name]
+                }
             
         elif instruction.name in instructions_with_params:
  
