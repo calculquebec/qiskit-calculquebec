@@ -39,19 +39,6 @@ class ApiUtility:
                 keys.TYPE: instructions_with_params[instruction.name],
                 keys.PARAMETERS: {"lambda": value}
             }
-
-        elif instruction.name in instructions_with_90:
-
-            value = instruction.params[0] if isinstance(instruction.params[0], (int, float, np.ndarray)) else instruction.params[0]
-            
-            if np.isclose(value, np.pi/2) :
-                value="_90"
-            elif np.isclose(value, -np.pi/2):
-                value="_minus_90"
-            operation={
-                keys.QUBITS: [instruction.qubits[0]._index],
-                keys.TYPE: (instructions_with_90[instruction.name]+value)
-            }
         elif instruction.name == "measure":
             operation={
                 keys.QUBITS: [instruction.qubits[0]._index],
@@ -175,20 +162,18 @@ class keys:
 instructions : dict[str, str] = {
     "i" : "i",
     "x" : "x",
+    "rx90":"x_90",
+    "rxm90":"x_minus_90",
     "y" : "y",
+    "ry90":"y_90",
+    "rym90":"y_minus_90",
     "z" : "z",
     "t" : "t",
-    "t_dag" : "t_dag",
+    "tdg" : "t_dag",
     "cz" : "cz",
 }
 
-instructions_with_90 : dict[str, str] = {
-    "rx" : "x",
-    "ry" : "y"
-    # "rz" : "z" #utile?
-}
-
 instructions_with_params : dict[str, str] = {
-    "rz": "z",
+    "rz": "rz",
     "p": "p"
 }
