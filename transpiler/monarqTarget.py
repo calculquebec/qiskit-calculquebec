@@ -1,7 +1,6 @@
 from qiskit.transpiler import Target, InstructionProperties
 from qiskit.circuit import Parameter
 from qiskit.circuit.library import XGate, YGate, ZGate, RZGate, TGate, TdgGate, IGate, CZGate, PhaseGate
-from numpy import random
 
 from .customGates import Rx90, Rxm90, Ry90, Rym90
 from monarq_data import connectivity

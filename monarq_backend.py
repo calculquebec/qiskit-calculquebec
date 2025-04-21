@@ -3,7 +3,7 @@ from API.adapter import ApiAdapter
 from API.client import MonarqClient
 from API.job import Job
 from transpiler.monarqPassManager import getPassManager
-from transpiler.monarqTarget import getTarget
+from transpiler.transpiler_utility import remove_measurements, append_measurements
 from monarq_data import connectivity
 
 
@@ -16,13 +16,18 @@ class monarq_backend(GenericBackendV2):
         # if kwargs == {}:
             #TODO si on veut default vers une simulation quand on a pas de paramètres pour l'API
         # else:
-            return self._send_job(circuit, kwargs)
+        return self._send_job(circuit, kwargs)
         
         
     def _send_job(self, circuit, kwargs):
-        target = getTarget()
-        pm = getPassManager(target)
-        transpiled_circuit = pm.run(circuit)
+        pm = getPassManager()
+        
+        # on gère les mesures nous-mêmes 
+        # le transpilateur n'a pas d'option pour empêcher les mesures intermédiaires (mid-circuit measurement)
+        no_measures_circuit, measures =remove_measurements(circuit)
+        transpiled_no_measures_circuit = pm.run(no_measures_circuit)
+        transpiled_circuit = append_measurements(transpiled_no_measures_circuit, measures)
+
 
         ApiAdapter.initialize(MonarqClient(
             host = kwargs.get("host"),
