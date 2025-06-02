@@ -1,6 +1,7 @@
 from qiskit import QuantumCircuit
 from copy import deepcopy
 
+
 def remove_measurements(circuit: QuantumCircuit):
     """Retourne un circuit sans mesures et une map des mesures originales."""
     new_circ = QuantumCircuit(circuit.num_qubits, circuit.num_clbits)
