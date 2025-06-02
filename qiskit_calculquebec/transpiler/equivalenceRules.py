@@ -23,7 +23,7 @@ def getEquivalenceRules():
     u3_equiv.rz(lam, 0)
 
     custom_lib.add_equivalence(U3Gate(theta, phi, lam), u3_equiv)
-    
+
     # CX ≈ RY(-π/2) on target → CZ → RY(π/2) on target
     cx_equiv = QuantumCircuit(2)
     cx_equiv.append(Rym90(), [1])
@@ -40,7 +40,6 @@ def getEquivalenceRules():
 
     custom_lib.add_equivalence(RXGate(theta), rx_equiv)
 
-
     # RY(θ) ≈ RX(π/2) → RZ(θ) → RX(-π/2)
     ry_equiv = QuantumCircuit(1)
     ry_equiv.append(Rx90(), [0])
@@ -48,5 +47,5 @@ def getEquivalenceRules():
     ry_equiv.append(Rxm90(), [0])
 
     custom_lib.add_equivalence(RYGate(theta), ry_equiv)
-    
+
     return custom_lib
