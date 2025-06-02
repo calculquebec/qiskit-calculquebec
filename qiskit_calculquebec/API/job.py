@@ -4,8 +4,8 @@ Contains a wrapper around the job creation and executing process for MonarQ
 from qiskit import QuantumCircuit
 import json
 import time
-from API.adapter import ApiAdapter
-from API.api_utility import ApiUtility
+from qiskit_calculquebec.API.adapter import ApiAdapter
+from qiskit_calculquebec.API.api_utility import ApiUtility
 
 class JobException(Exception):
     def __init__(self, message : str):

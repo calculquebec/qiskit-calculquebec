@@ -3,7 +3,7 @@ from qiskit.circuit import Parameter
 from qiskit.circuit.library import XGate, YGate, ZGate, RZGate, TGate, TdgGate, IGate, CZGate, PhaseGate
 
 from .customGates import Rx90, Rxm90, Ry90, Rym90
-from monarq_data import connectivity
+from qiskit_calculquebec.monarq_data import connectivity
 
 def get_gate_instance(gate):
     gate_class = gate.__class__

@@ -1,7 +1,7 @@
 """
 Contains MonarQ's connectivity
 """
-from API.api_utility import keys
+from qiskit_calculquebec.API.api_utility import keys
 
 
 """

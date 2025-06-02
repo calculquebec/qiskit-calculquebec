@@ -1,7 +1,7 @@
 from qiskit.providers.fake_provider import GenericBackendV2
-from API.adapter import ApiAdapter
-from API.client import MonarqClient
-from API.job import Job
+from qiskit_calculquebec.API.adapter import ApiAdapter
+from qiskit_calculquebec.API.client import MonarqClient
+from qiskit_calculquebec.API.job import Job
 from transpiler.monarqPassManager import getPassManager
 from transpiler.transpiler_utility import remove_measurements, append_measurements
 from monarq_data import connectivity

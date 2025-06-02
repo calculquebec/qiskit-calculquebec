@@ -5,7 +5,7 @@ from qiskit.transpiler.passes import (
     LookaheadSwap
 )
 from .equivalenceRules import getEquivalenceRules
-from transpiler.monarqTarget import getTarget
+from qiskit_calculquebec.transpiler.monarqTarget import getTarget
 
 def getPassManager():
 

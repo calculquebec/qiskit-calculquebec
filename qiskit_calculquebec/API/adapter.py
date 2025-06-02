@@ -1,9 +1,9 @@
 """Contains the ApiAdapter singleton class, which wraps every API call necessary for communicating with MonarQ
 """
-from API.api_utility import ApiUtility, routes, keys
+from qiskit_calculquebec.API.api_utility import ApiUtility, routes, keys
 import requests
 import json
-from API.client import ApiClient
+from qiskit_calculquebec.API.client import ApiClient
 from datetime import datetime, timedelta
 
 class ApiException(Exception):
