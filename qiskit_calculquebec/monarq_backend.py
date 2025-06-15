@@ -25,10 +25,13 @@ class monarq_backend(GenericBackendV2):
         # le transpilateur n'a pas d'option pour empêcher les mesures intermédiaires (mid-circuit measurement)
         no_measures_circuit, measures = remove_measurements(circuit)
         transpiled_no_measures_circuit = pm.run(no_measures_circuit)
-        transpiled_circuit = append_measurements(transpiled_no_measures_circuit, measures)
+        transpiled_circuit = append_measurements(
+            transpiled_no_measures_circuit, measures
+        )
 
         ApiAdapter.initialize(
-            MonarqClient(host=kwargs.get("host"),
+            MonarqClient(
+                host=kwargs.get("host"),
                 user=kwargs.get("user"),
                 access_token=kwargs.get("access_token"),
                 project_name=kwargs.get("project_name"),
