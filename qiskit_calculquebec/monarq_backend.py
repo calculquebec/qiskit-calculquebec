@@ -30,8 +30,7 @@ class monarq_backend(GenericBackendV2):
         )
 
         ApiAdapter.initialize(
-            MonarqClient(
-                host=kwargs.get("host"),
+            MonarqClient(host=kwargs.get("host"),
                 user=kwargs.get("user"),
                 access_token=kwargs.get("access_token"),
                 project_name=kwargs.get("project_name"),
