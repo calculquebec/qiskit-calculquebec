@@ -33,7 +33,9 @@ class AnyonBackend(Backend):
         # Initialize the device target
         self._target = Yukon()
         self.name = self._target.name
-        print(f"Initialized backend '{self.name}' with {self._target.num_qubits} qubits")
+        print(
+            f"Initialized backend '{self.name}' with {self._target.num_qubits} qubits"
+        )
 
         # Set backend options validators (only shots supported here)
         self.options.set_validator("shots", (1, 1000))
@@ -77,7 +79,10 @@ class AnyonBackend(Backend):
                         last_non_measure_idx = idx
 
                 # After the last non-measure instruction, only Measure is allowed
-                for idx, instr in enumerate(circuit.data[last_non_measure_idx+1:], start=last_non_measure_idx+1):
+                for idx, instr in enumerate(
+                    circuit.data[last_non_measure_idx + 1 :],
+                    start=last_non_measure_idx + 1,
+                ):
                     if qubit in instr[1]:
                         if not isinstance(instr[0], Measure):
                             raise ValueError(
@@ -119,11 +124,12 @@ class AnyonBackend(Backend):
         """
         Transpiler pass to replace RY(±π/2) with custom RY90/RYm90 gates.
         """
+
         def run(self, dag):
             for node in dag.op_nodes():
-                if node.name == 'ry' and np.isclose(node.op.params[0], np.pi/2):
+                if node.name == "ry" and np.isclose(node.op.params[0], np.pi / 2):
                     dag.substitute_node(node, RY90Gate())
-                elif node.name == 'ry' and np.isclose(node.op.params[0], -np.pi/2):
+                elif node.name == "ry" and np.isclose(node.op.params[0], -np.pi / 2):
                     dag.substitute_node(node, RYm90Gate())
             return dag
 

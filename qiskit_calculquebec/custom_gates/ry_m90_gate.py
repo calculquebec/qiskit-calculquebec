@@ -14,7 +14,7 @@ class RYm90Gate(Gate):
 
     def __init__(self):
         # Initialize gate with name 'rym90', acting on 1 qubit, with no parameters
-        super().__init__('rym90', 1, [])
+        super().__init__("rym90", 1, [])
 
     def _define(self):
         """

@@ -153,9 +153,11 @@ class routes:
     MACHINES = "/machines"
     BENCHMARKING = "/benchmarking"
 
+
 class queries:
     MACHINE_NAME = "?machineName"
     NAME = "?name"
+
 
 class keys:
     BIT_COUNT = "bitCount"

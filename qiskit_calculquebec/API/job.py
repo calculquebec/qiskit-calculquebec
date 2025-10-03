@@ -42,9 +42,7 @@ class Job:
 
     def run_getID(self) -> str:
         try:
-            response = ApiAdapter.post_job(
-                self.circuit_dict, self.shots
-            )
+            response = ApiAdapter.post_job(self.circuit_dict, self.shots)
         except:
             raise
         if response.status_code == 200:
@@ -62,9 +60,7 @@ class Job:
             max_tries = 2**15
         response = None
         try:
-            response = ApiAdapter.post_job(
-                self.circuit_dict, self.shots
-            )
+            response = ApiAdapter.post_job(self.circuit_dict, self.shots)
         except:
             raise
         if response.status_code == 200:

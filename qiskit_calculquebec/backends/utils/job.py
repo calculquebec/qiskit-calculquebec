@@ -16,7 +16,7 @@ class AnyonJob(Job):
     - Polling for job completion
     - Conversion of API results to Qiskit's Result object
     """
-    
+
     def __init__(self, backend, job_id=None, circuits=None, shots=1000):
         super().__init__(backend, job_id)
         self._backend = backend
@@ -54,7 +54,7 @@ class AnyonJob(Job):
         while True:
             elapsed = time.time() - start_time
             if timeout and elapsed >= timeout:
-                raise JobTimeoutError('Timed out waiting for result')
+                raise JobTimeoutError("Timed out waiting for result")
 
             response = ApiAdapter.job_by_id(self._job_id)
             result = response.json()
@@ -63,7 +63,7 @@ class AnyonJob(Job):
             if status == "SUCCEEDED":
                 break
             elif status == "FAILED":
-                raise JobError('Job execution failed')
+                raise JobError("Job execution failed")
 
             time.sleep(wait)
 
@@ -75,32 +75,35 @@ class AnyonJob(Job):
         Converts API histogram into counts and memory format.
         """
         job_info = self._wait_for_result(timeout, wait)
-        histogram = job_info['result']['histogram']
+        histogram = job_info["result"]["histogram"]
 
         # Build memory as hex strings repeated according to counts
         memory = []
         for bitstring, count in histogram.items():
             val = int(bitstring, 2)  # binary -> int
-            hex_str = format(val, f'0{((len(bitstring)+3)//4)}x')  # int -> hex with proper padding
+            hex_str = format(
+                val, f"0{((len(bitstring)+3)//4)}x"
+            )  # int -> hex with proper padding
             memory.extend([hex_str] * count)
 
         # Qiskit expects both counts and memory
-        qiskit_results = [{
-            'success': True,
-            'shots': sum(histogram.values()),
-            'data': {
-                'counts': histogram,
-                'memory': memory
+        qiskit_results = [
+            {
+                "success": True,
+                "shots": sum(histogram.values()),
+                "data": {"counts": histogram, "memory": memory},
             }
-        }]
+        ]
 
-        return Result.from_dict({
-            'results': qiskit_results,
-            'backend_name': getattr(self._backend, 'name', 'unknown'),
-            'backend_version': getattr(self._backend, 'backend_version', '0.0.0'),
-            'job_id': self._job_id,
-            'success': True,
-        })
+        return Result.from_dict(
+            {
+                "results": qiskit_results,
+                "backend_name": getattr(self._backend, "name", "unknown"),
+                "backend_version": getattr(self._backend, "backend_version", "0.0.0"),
+                "job_id": self._job_id,
+                "success": True,
+            }
+        )
 
     def status(self):
         """Map the backend job status to Qiskit JobStatus."""
@@ -111,7 +114,7 @@ class AnyonJob(Job):
             "RUNNING": JobStatus.RUNNING,
             "SUCCEEDED": JobStatus.DONE,
             "QUEUED": JobStatus.QUEUED,
-            "CANCELLED": JobStatus.CANCELLED
+            "CANCELLED": JobStatus.CANCELLED,
         }
 
         return mapping.get(status_str, JobStatus.ERROR)
@@ -137,8 +140,7 @@ class MultiAnyonJob(Job):
 
         # Create individual AnyonJobs for each circuit
         self._individual_jobs = [
-            AnyonJob(backend, circuits=[c], shots=self.shots)
-            for c in circuits
+            AnyonJob(backend, circuits=[c], shots=self.shots) for c in circuits
         ]
 
     def _wait_for_result(self, timeout=None, wait=5):
@@ -161,19 +163,21 @@ class MultiAnyonJob(Job):
                 data = exp.data
 
                 # Ensure compatibility: add 'evs' if missing
-                if not hasattr(data, 'evs') and not hasattr(data, 'counts'):
-                    ev = getattr(data, 'expectation_value', None)
-                    setattr(data, 'evs', ev if ev is not None else [])
+                if not hasattr(data, "evs") and not hasattr(data, "counts"):
+                    ev = getattr(data, "expectation_value", None)
+                    setattr(data, "evs", ev if ev is not None else [])
 
                 all_results.append(exp)
 
-        return Result.from_dict({
-            "results": [exp.to_dict() for exp in all_results],
-            "backend_name": getattr(self._backend, "name", "unknown"),
-            "backend_version": getattr(self._backend, "backend_version", "0.0.0"),
-            "job_id": self._job_id,
-            "success": all(exp.success for exp in all_results)
-        })
+        return Result.from_dict(
+            {
+                "results": [exp.to_dict() for exp in all_results],
+                "backend_name": getattr(self._backend, "name", "unknown"),
+                "backend_version": getattr(self._backend, "backend_version", "0.0.0"),
+                "job_id": self._job_id,
+                "success": all(exp.success for exp in all_results),
+            }
+        )
 
     def status(self):
         """Aggregate status from all individual jobs."""
