@@ -36,11 +36,20 @@ class Job:
         self,
         circuit: QuantumCircuit,
         shots=1,
-        circuit_name="default",
     ):
         self.circuit_dict = ApiUtility.convert_circuit(circuit)
-        self.circuit_name = circuit_name
         self.shots = shots
+
+    def run_getID(self) -> str:
+        try:
+            response = ApiAdapter.post_job(
+                self.circuit_dict, self.shots
+            )
+        except:
+            raise
+        if response.status_code == 200:
+            job_id = json.loads(response.text)["job"]["id"]
+            return job_id
 
     def run(self, max_tries: int = -1) -> dict:
         """
@@ -53,15 +62,15 @@ class Job:
             max_tries = 2**15
         response = None
         try:
-            response = ApiAdapter.create_job(
-                self.circuit_dict, self.circuit_name, self.shots
+            response = ApiAdapter.post_job(
+                self.circuit_dict, self.shots
             )
         except:
             raise
         if response.status_code == 200:
             current_status = ""
             job_id = json.loads(response.text)["job"]["id"]
-            for i in range(max_tries):
+            for _ in range(max_tries):
                 time.sleep(0.2)
                 response = ApiAdapter.job_by_id(job_id)
 

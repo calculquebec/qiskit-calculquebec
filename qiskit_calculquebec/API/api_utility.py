@@ -29,11 +29,11 @@ class ApiUtility:
                 }
             else:
                 operation = {
+                    keys.TYPE: instructions[instruction.name],
                     keys.QUBITS: [
                         instruction.qubits[0]._index,
                         instruction.qubits[1]._index,
                     ],
-                    keys.TYPE: instructions[instruction.name],
                 }
 
         elif instruction.name in instructions_with_params:
@@ -44,14 +44,14 @@ class ApiUtility:
                 else instruction.params[0]
             )
             operation = {
-                keys.QUBITS: [instruction.qubits[0]._index],
                 keys.TYPE: instructions_with_params[instruction.name],
+                keys.QUBITS: [instruction.qubits[0]._index],
                 keys.PARAMETERS: {"lambda": value},
             }
         elif instruction.name == "measure":
             operation = {
-                keys.QUBITS: [instruction.qubits[0]._index],
                 keys.TYPE: "readout",
+                keys.QUBITS: [instruction.qubits[0]._index],
                 keys.BITS: [instruction.clbits[0]._index],
             }
 
@@ -73,6 +73,7 @@ class ApiUtility:
         """
 
         # Initialize the dictionary with fixed bit and qubit counts (adjustable as needed)
+        # print(len(circuit))
         circuit_dict = {
             keys.TYPE: keys.CIRCUIT,
             keys.BIT_COUNT: 24,  # Adjust as needed for dynamic sizing
@@ -151,8 +152,10 @@ class routes:
     PROJECTS = "/projects"
     MACHINES = "/machines"
     BENCHMARKING = "/benchmarking"
-    MACHINE_NAME = "?machineName"
 
+class queries:
+    MACHINE_NAME = "?machineName"
+    NAME = "?name"
 
 class keys:
     BIT_COUNT = "bitCount"
@@ -182,14 +185,14 @@ class keys:
 instructions: dict[str, str] = {
     "i": "i",
     "x": "x",
-    "rx90": "x_90",
-    "rxm90": "x_minus_90",
     "y": "y",
-    "ry90": "y_90",
-    "rym90": "y_minus_90",
     "z": "z",
     "t": "t",
     "tdg": "t_dag",
+    "sx": "x_90",
+    "sxdg": "x_minus_90",
+    "ry90": "y_90",
+    "rym90": "y_minus_90",
     "cz": "cz",
 }
 
