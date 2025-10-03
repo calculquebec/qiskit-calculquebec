@@ -9,19 +9,19 @@ from qiskit.transpiler.passes import RemoveBarriers
 from qiskit_calculquebec.API.adapter import ApiAdapter
 from qiskit_calculquebec.API.client import ApiClient
 from qiskit_calculquebec.backends.targets.yukon import Yukon
-from qiskit_calculquebec.backends.utils.job import MultiAnyonJob
+from qiskit_calculquebec.backends.utils.job import MultiMonarQJob
 from qiskit_calculquebec.custom_gates.ry_90_gate import RY90Gate
 from qiskit_calculquebec.custom_gates.ry_m90_gate import RYm90Gate
 
 
-class AnyonBackend(Backend):
+class MonarQBackend(Backend):
     """
     Custom backend for the Yukon 6-qubit device.
 
     Features:
     - Integrates with Calcul Québec API
     - Validates measurement placement
-    - Supports multi-circuit jobs with MultiAnyonJob
+    - Supports multi-circuit jobs with MultiMonarQJob
     - Transpilation includes automatic RY(±π/2) replacement
     """
 
@@ -97,7 +97,7 @@ class AnyonBackend(Backend):
 
     def run(self, circuits, **kwargs):
         """
-        Submit circuits to the backend and return a MultiAnyonJob.
+        Submit circuits to the backend and return a MultiMonarQJob.
 
         Args:
             circuits: Circuit or list of circuits to execute.
@@ -115,10 +115,10 @@ class AnyonBackend(Backend):
         shots = kwargs.get("shots", getattr(self.options, "shots", 1000))
         if shots > 1000:
             shots = 1000
-            Warning("Shots capped at 1000 for AnyonBackend.")
+            Warning("Shots capped at 1000 for MonarQBackend.")
 
         # Return a multi-job wrapper to handle sequential execution
-        return MultiAnyonJob(self, circuits, shots=shots)
+        return MultiMonarQJob(self, circuits, shots=shots)
 
     class ReplaceRYPass(TransformationPass):
         """

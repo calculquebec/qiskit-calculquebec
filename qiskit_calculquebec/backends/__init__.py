@@ -1,3 +1,3 @@
-from .anyon_backend import AnyonBackend
+from .monarq_backend import MonarQBackend
 
-__all__ = ["AnyonBackend"]
+__all__ = ["MonarQBackend"]

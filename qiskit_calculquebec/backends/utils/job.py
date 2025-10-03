@@ -7,9 +7,9 @@ from qiskit_calculquebec.API.job import Job as CQJob
 from qiskit_calculquebec.API.adapter import ApiAdapter
 
 
-class AnyonJob(Job):
+class MonarQJob(Job):
     """
-    A wrapper for submitting and managing a single circuit to a Yukon/Anyon backend.
+    A wrapper for submitting and managing a single circuit to a Yukon/MonarQ backend.
 
     Handles:
     - Circuit submission
@@ -32,7 +32,7 @@ class AnyonJob(Job):
     def _submit_circuit(self):
         """Submit a single circuit to the API and return the job ID."""
         if not self.circuits or len(self.circuits) != 1:
-            raise ValueError("AnyonJob can only submit one circuit at a time")
+            raise ValueError("MonarQJob can only submit one circuit at a time")
 
         circuit = self.circuits[0]
         result = CQJob(circuit, self.shots).run_getID()
@@ -124,12 +124,12 @@ class AnyonJob(Job):
         return self.result()
 
 
-class MultiAnyonJob(Job):
+class MultiMonarQJob(Job):
     """
     Wrapper to handle multiple circuits sequentially on a backend
     that only supports one circuit per job.
 
-    This class manages multiple AnyonJob instances internally.
+    This class manages multiple MonarQJob instances internally.
     """
 
     def __init__(self, backend, circuits, job_id=None, shots=None):
@@ -138,9 +138,9 @@ class MultiAnyonJob(Job):
         self.circuits = circuits
         self.shots = shots or getattr(backend.options, "shots", 1000)
 
-        # Create individual AnyonJobs for each circuit
+        # Create individual MonarQJobs for each circuit
         self._individual_jobs = [
-            AnyonJob(backend, circuits=[c], shots=self.shots) for c in circuits
+            MonarQJob(backend, circuits=[c], shots=self.shots) for c in circuits
         ]
 
     def _wait_for_result(self, timeout=None, wait=5):
@@ -151,7 +151,7 @@ class MultiAnyonJob(Job):
 
     def result(self, timeout=None, wait=5):
         """
-        Combine results from all individual AnyonJobs into a single Qiskit Result.
+        Combine results from all individual MonarQJobs into a single Qiskit Result.
         Ensures compatibility with Estimator by setting 'evs' if missing.
         """
         all_results = []
