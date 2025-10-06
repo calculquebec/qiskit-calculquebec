@@ -1,5 +1,5 @@
 from qiskit.providers.providerutils import filter_backends
-from qiskit_calculquebec.backends.anyon_backend import AnyonBackend as MyBackend
+from qiskit_calculquebec.backends.monarq_backend import MonarQBackend as MyBackend
 
 
 class CalculQuebecProvider:
