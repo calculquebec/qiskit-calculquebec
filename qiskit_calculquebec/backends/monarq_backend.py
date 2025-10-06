@@ -33,9 +33,6 @@ class MonarQBackend(Backend):
         # Initialize the device target
         self._target = Yukon()
         self.name = self._target.name
-        print(
-            f"Initialized backend '{self.name}' with {self._target.num_qubits} qubits"
-        )
 
         # Set backend options validators (only shots supported here)
         self.options.set_validator("shots", (1, 1000))

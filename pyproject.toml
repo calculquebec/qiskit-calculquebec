@@ -21,7 +21,7 @@ build-backend = "setuptools.build_meta"
 packages = ["qiskit_calculquebec"]
 
 [tool.setuptools.package-data]
-qiskit_calculquebec = ["custom_gates/*.py", "API/*.py", "provider/*.py", "transpiler/*.py"]
+qiskit_calculquebec = ["custom_gates/*.py", "API/*.py", "provider/*.py", "transpiler/*.py", "backends/*.py"]
 
 [tool.setuptools.exclude-package-data]
 qiskit_calculquebec = ["tests/*"]

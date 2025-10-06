@@ -73,7 +73,6 @@ class ApiUtility:
         """
 
         # Initialize the dictionary with fixed bit and qubit counts (adjustable as needed)
-        # print(len(circuit))
         circuit_dict = {
             keys.TYPE: keys.CIRCUIT,
             keys.BIT_COUNT: 24,  # Adjust as needed for dynamic sizing

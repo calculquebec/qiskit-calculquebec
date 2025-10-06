@@ -301,7 +301,6 @@ class ApiAdapter(object):
         body = ApiUtility.job_body(
             circuit, circuit_name, project_id, machine_name, shot_count
         )
-        print(body)
         res = requests.post(
             ApiAdapter.instance().client.host + routes.JOBS,
             data=json.dumps(body),
