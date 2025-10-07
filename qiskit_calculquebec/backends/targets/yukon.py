@@ -14,8 +14,10 @@ from qiskit.circuit.library import (
     Measure,
 )
 from qiskit.circuit import Parameter
+from qiskit.transpiler.target import QubitProperties
 
 # Custom single-qubit rotations (not in standard Qiskit)
+from qiskit_calculquebec.API.adapter import ApiAdapter
 from qiskit_calculquebec.custom_gates.ry_90_gate import RY90Gate
 from qiskit_calculquebec.custom_gates.ry_m90_gate import RYm90Gate
 
@@ -31,7 +33,9 @@ class Yukon(Target):
     """
 
     def __init__(self):
-        super().__init__()
+        qubit_properties = self.__get_qubit_properties__()
+        self.qubit_properties = qubit_properties
+        super().__init__(qubit_properties=qubit_properties)
         self.name = "Yukon"
 
         # Define the bidirectional connectivity of the 6 qubits
@@ -82,3 +86,18 @@ class Yukon(Target):
         # Only CZ is supported, defined for all edges in the coupling map
         cz_props = {edge: None for edge in self.coupling_map}
         self.add_instruction(CZGate(), cz_props)
+
+    def __get_qubit_properties__(self):
+        qubit_properties = None
+        if ApiAdapter.instance() != None:
+            benchmark = ApiAdapter.get_benchmark("yukon")
+            for i in range(6):
+                if qubit_properties is None:
+                    qubit_properties = []
+                qubit_properties.append(
+                    QubitProperties(
+                        t1=benchmark["resultsPerDevice"]["qubits"][str(i)]["t1"],
+                        t2=benchmark["resultsPerDevice"]["qubits"][str(i)]["t2Echo"],
+                    )
+                )
+        return qubit_properties

@@ -30,6 +30,9 @@ class MonarQBackend(Backend):
     def __init__(self, client: ApiClient = None):
         super().__init__()
 
+        self._client = client
+        if self._client is not None:
+            ApiAdapter.initialize(self._client)
         # Initialize the device target
         self._target = Yukon()
         self.name = self._target.name
@@ -38,9 +41,6 @@ class MonarQBackend(Backend):
         self.options.set_validator("shots", (1, 1000))
 
         # Initialize API client if provided
-        self._client = client
-        if self._client is not None:
-            ApiAdapter.initialize(self._client)
 
     @property
     def target(self):
