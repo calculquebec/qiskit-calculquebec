@@ -27,21 +27,6 @@ class MonarQBackend(Backend):
 
     _client: ApiClient
 
-    def __init__(self, client: ApiClient = None):
-        super().__init__()
-
-        self._client = client
-        if self._client is not None:
-            ApiAdapter.initialize(self._client)
-        # Initialize the device target
-        self._target = Yukon()
-        self.name = self._target.name
-
-        # Set backend options validators (only shots supported here)
-        self.options.set_validator("shots", (1, 1000))
-
-        # Initialize API client if provided
-
     @property
     def target(self):
         """Return the backend target object."""
@@ -56,6 +41,23 @@ class MonarQBackend(Backend):
     def _default_options(cls):
         """Provide default backend options."""
         return Options(shots=1000)
+
+    def __init__(self, client: ApiClient = None):
+        super().__init__()
+        if client is None:
+            raise ValueError("An ApiClient instance must be provided.")
+
+        self._client = client
+        ApiAdapter.initialize(self._client)
+
+        # Initialize the device target
+        if str.lower(self._client.machine_name) not in ["yukon", "monarq"]:
+            raise ValueError(f"Unsupported machine name: {self._client.machine_name}")
+        self._target = Yukon()
+        self.name = self._target.name
+
+        # Set backend options validators (only shots supported here)
+        self.options.set_validator("shots", (1, 1000))
 
     def _validate_measurements_at_end(self, circuits):
         """
@@ -112,7 +114,7 @@ class MonarQBackend(Backend):
         shots = kwargs.get("shots", getattr(self.options, "shots", 1000))
         if shots > 1000:
             shots = 1000
-            Warning("Shots capped at 1000 for MonarQBackend.")
+            Warning("Shots are set at 1000 for MonarQBackend.")
 
         # Return a multi-job wrapper to handle sequential execution
         return MultiMonarQJob(self, circuits, shots=shots)

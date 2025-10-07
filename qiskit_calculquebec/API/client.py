@@ -32,7 +32,6 @@ class ApiClient:
         user (str) : the users identifier
         access_token (str) : the unique access key provided to the user
         realm (str) : the organisational group associated with the machine
-        machine_name (str) : the name of the machine
         project_name (str) : the name of the project
         project_id (str) : the ID of the project
         circuit_name (str) : the name of the circuit to use for the job
@@ -63,16 +62,6 @@ class ApiClient:
         """Sets the circuit name."""
         self._circuit_name = value
 
-    @property
-    def machine_name(self):
-        """Returns the machine name."""
-        return self._machine_name
-
-    @machine_name.setter
-    def machine_name(self, value: str):
-        """Sets the machine name."""
-        self._machine_name = value
-
     def __init__(
         self,
         host: str,
@@ -97,7 +86,6 @@ class ApiClient:
         self.user = user
         self.access_token = access_token
         self.realm = realm
-        self._machine_name = ""
         self._project_name = project_name
         self._project_id = project_id
         self._circuit_name = circuit_name
