@@ -1,12 +1,12 @@
 [project]
 name = "qiskit-calculquebec"
-version = "0.1.0"
+dynamic = ["version"]
 description = "Custom Qiskit backend and provider for Calcul Québec."
 maintainers = [
     { name = "Calcul Québec", email = "support@tech.alliancecan.ca" },
 ]
 readme = "README.md"
-license = { file = "LICENCE" }
+license-files = ["LICENCE"]
 requires-python = ">=3.8"
 dependencies = [
     "qiskit>=2.0.0",
@@ -14,7 +14,7 @@ dependencies = [
 ]
 
 [build-system]
-requires = ["setuptools>=61.0", "wheel"]
+requires = ["setuptools>=80", "setuptools-scm>=8"]
 build-backend = "setuptools.build_meta"
 
 [tool.setuptools]
@@ -25,3 +25,6 @@ qiskit_calculquebec = ["custom_gates/*.py", "API/*.py", "provider/*.py", "transp
 
 [tool.setuptools.exclude-package-data]
 qiskit_calculquebec = ["tests/*"]
+
+[tool.setuptools_scm]
+version_file = "qiskit_calculquebec/_version.py"
