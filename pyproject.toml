@@ -6,7 +6,7 @@ maintainers = [
     { name = "Calcul Québec", email = "support@tech.alliancecan.ca" },
 ]
 readme = "README.md"
-license = { file = "LICENCE" }
+license-files = ["LICENCE"]
 requires-python = ">=3.8"
 dependencies = [
     "qiskit>=2.0.0",
