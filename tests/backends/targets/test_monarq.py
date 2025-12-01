@@ -1,46 +1,42 @@
-from typing import Dict
 from unittest.mock import MagicMock, patch
 import pytest
 from qiskit.circuit.library import *
 
 from qiskit_calculquebec.API.client import CalculQuebecClient
-from qiskit_calculquebec.backends.targets.monarq import (
-    MonarQ,
-)
-
+from qiskit_calculquebec.backends.targets.monarq import MonarQ
 
 client = CalculQuebecClient("host", "user", "token", project_id="test_project_id")
 
 
 @pytest.fixture
-def mock_api_adapter():
-    with patch("qiskit_calculquebec.API.adapter.ApiAdapter.instance") as mock_instance:
-        mock_instance.return_value = MagicMock(client=client)
+def monarq_target():
+    """Return a MonarQ instance with API calls mocked."""
+    with patch(
+        "qiskit_calculquebec.API.adapter.ApiAdapter.get_machine_by_name"
+    ) as mock_get_machine, patch(
+        "qiskit_calculquebec.API.adapter.ApiAdapter.get_benchmark"
+    ) as mock_get_benchmark:
 
-        # Mock get_benchmark to return the expected dict
-        benchmark_data = {
+        # Mock machine info
+        mock_get_machine.return_value = {
+            "machineName": "monarq",
+            "qubits": [{"id": i, "t1": 10 + i, "t2Echo": 20 + i} for i in range(24)],
+            "instructions": [
+                {"name": "cx", "qubits": [0, 4]},
+                {"name": "rz", "qubits": [0]},
+            ],
+        }
+
+        # Mock benchmark info
+        mock_get_benchmark.return_value = {
             "resultsPerDevice": {
                 "qubits": {
                     str(i): {"t1": 10.0 + i, "t2Echo": 20.0 + i} for i in range(24)
                 }
             }
         }
-        with patch(
-            "qiskit_calculquebec.API.adapter.ApiAdapter.get_benchmark",
-            return_value=benchmark_data,
-        ):
-            with patch(
-                "qiskit_calculquebec.API.adapter.ApiAdapter.get_machine_by_name"
-            ) as mock_machine:
-                with patch(
-                    "qiskit_calculquebec.API.adapter.ApiAdapter.post_job"
-                ) as mock_post_job:
-                    yield mock_instance, MagicMock(), mock_machine, mock_post_job
 
-
-@pytest.fixture
-def monarq_target():
-    return MonarQ()
+        yield MonarQ()
 
 
 def test_qubit_count(monarq_target):
@@ -146,7 +142,7 @@ def test_name(monarq_target):
     assert monarq_target.name == "MonarQ"
 
 
-def test_qubit_properties(monarq_target, mock_api_adapter):
+def test_qubit_properties(monarq_target):
     from qiskit.transpiler.target import QubitProperties
 
     qubit_props = monarq_target.__get_qubit_properties__()

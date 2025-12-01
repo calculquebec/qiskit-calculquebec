@@ -53,7 +53,7 @@ class MonarQBackend(Backend):
         self._client = client
         ApiAdapter.initialize(self._client)
 
-        if str.lower(self.machine_name) not in ["yukon", "monarq"]:
+        if str.lower(machine_name) not in ["yukon", "monarq"]:
             raise ValueError(
                 f"Unsupported machine name: {self._client.machine_name} please choose 'yukon' or 'monarq'."
             )

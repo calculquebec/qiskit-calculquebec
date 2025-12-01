@@ -1,3 +1,4 @@
+import json
 import pytest
 from unittest.mock import patch, MagicMock
 from qiskit_calculquebec.API.client import CalculQuebecClient
@@ -21,17 +22,25 @@ def mock_api_adapter():
                 }
             }
         }
+
         with patch(
             "qiskit_calculquebec.API.adapter.ApiAdapter.get_benchmark",
             return_value=benchmark_data,
-        ):
-            with patch(
-                "qiskit_calculquebec.API.adapter.ApiAdapter.get_machine_by_name"
-            ) as mock_machine:
-                with patch(
-                    "qiskit_calculquebec.API.adapter.ApiAdapter.post_job"
-                ) as mock_post_job:
-                    yield mock_instance, MagicMock(), mock_machine, mock_post_job
+        ), patch(
+            "qiskit_calculquebec.API.adapter.ApiAdapter.get_machine_by_name"
+        ) as mock_machine, patch(
+            "qiskit_calculquebec.API.adapter.ApiAdapter.post_job"
+        ) as mock_post_job:
+
+            # Return a mock response with .text containing a successful job JSON
+            mock_response = MagicMock()
+            mock_response.status_code = 200
+            mock_response.text = json.dumps(
+                {"job": {"id": "1234"}, "status": "submitted"}
+            )
+            mock_post_job.return_value = mock_response
+
+            yield mock_instance, MagicMock(), mock_machine, mock_post_job
 
 
 def test_constructor(mock_api_adapter):
@@ -43,14 +52,14 @@ def test_constructor(mock_api_adapter):
     mock_instance.assert_not_called()
 
     # client given, no config given, should set default config
-    dev = MonarQBackend(client=client)
+    dev = MonarQBackend(machine_name="yukon", client=client)
     mock_instance.assert_called_once()
     assert dev.name.lower() in ["yukon", "monarq"]
 
 
 def test_validate_circuit(mock_api_adapter):
     mock_instance, mock_bench, mock_machine, mock_post_job = mock_api_adapter
-    dev = MonarQBackend(client=client)
+    dev = MonarQBackend(machine_name="yukon", client=client)
     mock_instance.assert_called_once()
 
     # valid circuit
@@ -84,7 +93,7 @@ def test_validate_circuit(mock_api_adapter):
 
 def test_default_options(mock_api_adapter):
     mock_instance, mock_bench, mock_machine, mock_post_job = mock_api_adapter
-    dev = MonarQBackend(client=client)
+    dev = MonarQBackend(machine_name="yukon", client=client)
     mock_instance.assert_called_once()
 
     options = dev._default_options()
@@ -93,7 +102,7 @@ def test_default_options(mock_api_adapter):
 
 def test_run_sets_shots_limit(mock_api_adapter):
 
-    dev = MonarQBackend(client=client)
+    dev = MonarQBackend(machine_name="yukon", client=client)
 
     from qiskit import QuantumCircuit
 
@@ -114,7 +123,7 @@ def test_run_sets_shots_limit(mock_api_adapter):
 
 def test_run_multiple_circuits(mock_api_adapter):
 
-    dev = MonarQBackend(client=client)
+    dev = MonarQBackend(machine_name="yukon", client=client)
 
     from qiskit import QuantumCircuit
 
