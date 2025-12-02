@@ -17,6 +17,9 @@ dependencies = [
 requires = ["setuptools>=61.0", "wheel"]
 build-backend = "setuptools.build_meta"
 
+[project.optional-dependencies]
+test = ["pytest", "pytest-mock"]
+
 [tool.setuptools]
 packages = ["qiskit_calculquebec"]
 
