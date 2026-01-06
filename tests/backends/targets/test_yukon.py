@@ -13,16 +13,21 @@ client = CalculQuebecClient("host", "user", "token", project_id="test_project_id
 
 @pytest.fixture
 def yukon_target():
-    """Return a MonarQ instance with API calls mocked."""
+    """Return a Yukon instance with API calls mocked."""
     with patch(
         "qiskit_calculquebec.API.adapter.ApiAdapter.get_machine_by_name"
     ) as mock_get_machine, patch(
         "qiskit_calculquebec.API.adapter.ApiAdapter.get_benchmark"
-    ) as mock_get_benchmark:
+    ) as mock_get_benchmark, patch(
+        "qiskit_calculquebec.API.adapter.ApiAdapter.instance"
+    ) as mock_instance:
+
+        # Ensure instance() returns something non-None
+        mock_instance.return_value = MagicMock()
 
         # Mock machine info
         mock_get_machine.return_value = {
-            "machineName": "monarq",
+            "machineName": "yukon",
             "qubits": [{"id": i, "t1": 10 + i, "t2Echo": 20 + i} for i in range(6)],
             "instructions": [
                 {"name": "cx", "qubits": [0, 4]},

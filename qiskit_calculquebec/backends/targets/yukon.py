@@ -33,9 +33,9 @@ class Yukon(Target):
     """
 
     def __init__(self):
+        super().__init__()
         qubit_properties = self.__get_qubit_properties__()
         self.qubit_properties = qubit_properties
-        super().__init__(qubit_properties=qubit_properties)
         self.name = "Yukon"
 
         # Define the bidirectional connectivity of the 6 qubits
