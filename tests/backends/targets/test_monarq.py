@@ -15,7 +15,12 @@ def monarq_target():
         "qiskit_calculquebec.API.adapter.ApiAdapter.get_machine_by_name"
     ) as mock_get_machine, patch(
         "qiskit_calculquebec.API.adapter.ApiAdapter.get_benchmark"
-    ) as mock_get_benchmark:
+    ) as mock_get_benchmark, patch(
+        "qiskit_calculquebec.API.adapter.ApiAdapter.instance"
+    ) as mock_instance:
+
+        # Mock instance to not be None
+        mock_instance.return_value = MagicMock()
 
         # Mock machine info
         mock_get_machine.return_value = {
