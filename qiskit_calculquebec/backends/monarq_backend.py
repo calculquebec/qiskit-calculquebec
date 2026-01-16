@@ -111,7 +111,11 @@ class MonarQBackend(Backend):
         shots = kwargs.get("shots", getattr(self.options, "shots", 1024))
         if shots > 1024:
             shots = 1024
-            warnings.warn("Shots are set at 1024 for MonarQBackend.", UserWarning)
+            warnings.warn(
+                "MonarQBackend supports a maximum of 1024 shots. "
+                "Your requested number of shots has been set to 1024.",
+                UserWarning,
+            )
 
         # Return a multi-job wrapper to handle sequential execution
         return MultiMonarQJob(self, circuits, shots=shots)
