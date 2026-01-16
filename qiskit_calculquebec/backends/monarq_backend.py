@@ -1,4 +1,6 @@
+import warnings
 import numpy as np
+from qiskit.circuit import Measure
 from qiskit import generate_preset_pass_manager
 from qiskit.providers import BackendV2 as Backend
 from qiskit.providers import Options
@@ -8,6 +10,7 @@ from qiskit.transpiler.passes import RemoveBarriers
 
 from qiskit_calculquebec.API.adapter import ApiAdapter
 from qiskit_calculquebec.API.client import ApiClient
+from qiskit_calculquebec.backends.targets.monarq import MonarQ
 from qiskit_calculquebec.backends.targets.yukon import Yukon
 from qiskit_calculquebec.backends.utils.job import MultiMonarQJob
 from qiskit_calculquebec.custom_gates.ry_90_gate import RY90Gate
@@ -40,9 +43,9 @@ class MonarQBackend(Backend):
     @classmethod
     def _default_options(cls):
         """Provide default backend options."""
-        return Options(shots=1000)
+        return Options(shots=1024)
 
-    def __init__(self, client: ApiClient = None):
+    def __init__(self, machine_name: str = "monarq", client: ApiClient = None):
         super().__init__()
         if client is None:
             raise ValueError("An ApiClient instance must be provided.")
@@ -50,49 +53,43 @@ class MonarQBackend(Backend):
         self._client = client
         ApiAdapter.initialize(self._client)
 
-        # Initialize the device target
-        if str.lower(self._client.machine_name) not in ["yukon", "monarq"]:
-            raise ValueError(f"Unsupported machine name: {self._client.machine_name}")
-        self._target = Yukon()
+        if str.lower(machine_name) not in ["yukon", "monarq"]:
+            raise ValueError(
+                f"Unsupported machine name: {self._client.machine_name} please choose 'yukon' or 'monarq'."
+            )
+        if machine_name.lower() == "yukon":
+            self._client.machine_name = "yukon"
+            self._target = Yukon()
+        elif machine_name.lower() == "monarq":
+            self._client.machine_name = "monarq"
+            self._target = MonarQ()
+
         self.name = self._target.name
 
         # Set backend options validators (only shots supported here)
-        self.options.set_validator("shots", (1, 1000))
+        self.options.set_validator("shots", (1, 1024))
 
-    def _validate_measurements_at_end(self, circuits):
-        """
-        Ensure all measurements are only at the end of each qubit and
-        have exactly one qubit and one classical bit.
-        """
-        from qiskit.circuit import Measure
+    def _validate_circuit(self, circuits):
+        for qc in circuits:
+            measured_qubits = set()
+            for instr in qc.data:
+                op = instr.operation
+                qubits = instr.qubits
 
-        if not isinstance(circuits, (list, tuple)):
-            circuits = [circuits]
+                # Mark qubits as measured
+                if isinstance(op, Measure):
+                    if len(instr.qubits) != 1 or len(instr.clbits) != 1:
+                        raise ValueError("Multi-qubit measurements are not supported.")
+                    measured_qubits.update(qubits)
 
-        for circuit in circuits:
-            for qubit in circuit.qubits:
-                # Track the index of the last non-measure instruction for this qubit
-                last_non_measure_idx = -1
-                for idx, instr in enumerate(circuit.data):
-                    if qubit in instr[1] and not isinstance(instr[0], Measure):
-                        last_non_measure_idx = idx
-
-                # After the last non-measure instruction, only Measure is allowed
-                for idx, instr in enumerate(
-                    circuit.data[last_non_measure_idx + 1 :],
-                    start=last_non_measure_idx + 1,
-                ):
-                    if qubit in instr[1]:
-                        if not isinstance(instr[0], Measure):
-                            raise ValueError(
-                                f"Non-measure operation after measurement on qubit {qubit} "
-                                f"in circuit '{circuit.name}' at instruction {idx}."
-                            )
-                        if len(instr[1]) != 1 or len(instr[2]) != 1:
-                            raise ValueError(
-                                f"Measurement at instruction {idx} in circuit '{circuit.name}' "
-                                f"must have exactly one qubit and one classical bit."
-                            )
+                else:
+                    # Gate after measurement → raise error
+                    if any(q in measured_qubits for q in qubits):
+                        raise ValueError(
+                            "Gate applied after measurement is not allowed."
+                        )
+            if len(measured_qubits) == 0:
+                raise ValueError("All circuits must contain at least one measurement.")
 
     def run(self, circuits, **kwargs):
         """
@@ -106,15 +103,19 @@ class MonarQBackend(Backend):
             circuits = [circuits]
 
         # Validate measurement placement
-        self._validate_measurements_at_end(circuits)
+        self._validate_circuit(circuits)
 
         # Remove barriers to simplify transpilation/execution
         circuits = RemoveBarriers()(circuits)
 
-        shots = kwargs.get("shots", getattr(self.options, "shots", 1000))
-        if shots > 1000:
-            shots = 1000
-            Warning("Shots are set at 1000 for MonarQBackend.")
+        shots = kwargs.get("shots", getattr(self.options, "shots", 1024))
+        if shots > 1024:
+            shots = 1024
+            warnings.warn(
+                "MonarQBackend supports a maximum of 1024 shots. "
+                "Your requested number of shots has been set to 1024.",
+                UserWarning,
+            )
 
         # Return a multi-job wrapper to handle sequential execution
         return MultiMonarQJob(self, circuits, shots=shots)

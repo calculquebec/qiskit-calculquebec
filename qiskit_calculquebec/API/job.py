@@ -45,9 +45,10 @@ class Job:
             response = ApiAdapter.post_job(self.circuit_dict, self.shots)
         except:
             raise
-        if response.status_code == 200:
-            job_id = json.loads(response.text)["job"]["id"]
-            return job_id
+        if response.status_code != 200:
+            self.raise_api_error(response)
+
+        return json.loads(response.text)["job"]["id"]
 
     def run(self, max_tries: int = -1) -> dict:
         """
@@ -92,7 +93,8 @@ class Job:
         """
         this raises an error by parsing the json body of the response, and using the response text as message
         """
-        error = json.loads("responsetext", response.text)
+        error = json.loads(response.text)
+
         raise JobException(
-            "API ERROR : " + str(error["code"]) + ", " + error["error"] + ", " + error
+            f"API ERROR: {error.get('code')}, {error.get('error')}, {error}"
         )

@@ -9,19 +9,23 @@ readme = "README.md"
 license-files = ["LICENCE"]
 requires-python = ">=3.8"
 dependencies = [
-    "qiskit>=2.0.0",
-    "numpy>=1.21.0"
+    "qiskit>=2.2.0",
+    "numpy>=1.21.0",
+    "requests>=2.25.0",
 ]
 
 [build-system]
 requires = ["setuptools>=80", "setuptools-scm>=8"]
 build-backend = "setuptools.build_meta"
 
+[project.optional-dependencies]
+test = ["pytest", "pytest-mock"]
+
 [tool.setuptools]
 packages = ["qiskit_calculquebec"]
 
 [tool.setuptools.package-data]
-qiskit_calculquebec = ["custom_gates/*.py", "API/*.py", "provider/*.py", "transpiler/*.py", "backends/*.py"]
+qiskit_calculquebec = ["custom_gates/*.py", "API/*.py", "provider/*.py", "transpiler/*.py", "backends/*.py", "backends/targets/*.py"]
 
 [tool.setuptools.exclude-package-data]
 qiskit_calculquebec = ["tests/*"]

@@ -22,7 +22,7 @@ from qiskit_calculquebec.custom_gates.ry_90_gate import RY90Gate
 from qiskit_calculquebec.custom_gates.ry_m90_gate import RYm90Gate
 
 
-class Yukon(Target):
+class MonarQ(Target):
     """
     Custom Qiskit Target for the Yukon 6-qubit device.
 
@@ -36,25 +36,67 @@ class Yukon(Target):
         super().__init__()
         qubit_properties = self.__get_qubit_properties__()
         self.qubit_properties = qubit_properties
-        self.name = "Yukon"
+        self.name = "MonarQ"
 
         # Define the bidirectional connectivity of the 6 qubits
         # Each tuple represents a directed edge (control, target)
         self.coupling_map = [
-            (0, 1),
-            (1, 0),
-            (1, 2),
-            (2, 1),
-            (2, 3),
-            (3, 2),
-            (3, 4),
-            (4, 3),
-            (4, 5),
-            (5, 4),
+            (0, 4),
+            (1, 5),
+            (2, 6),
+            (3, 7),
+            (4, 0),
+            (4, 1),
+            (4, 8),
+            (5, 1),
+            (5, 2),
+            (5, 9),
+            (5, 10),
+            (6, 2),
+            (6, 3),
+            (6, 11),
+            (7, 3),
+            (7, 13),
+            (8, 4),
+            (8, 12),
+            (9, 4),
+            (9, 5),
+            (9, 13),
+            (10, 5),
+            (10, 10),
+            (10, 14),
+            (11, 6),
+            (11, 12),
+            (11, 14),
+            (12, 8),
+            (12, 11),
+            (12, 17),
+            (13, 7),
+            (13, 9),
+            (13, 18),
+            (14, 10),
+            (14, 11),
+            (14, 19),
+            (15, 11),
+            (15, 19),
+            (16, 12),
+            (16, 20),
+            (17, 12),
+            (17, 16),
+            (17, 21),
+            (18, 13),
+            (18, 22),
+            (19, 14),
+            (19, 15),
+            (19, 23),
+            (20, 16),
+            (21, 17),
+            (22, 18),
+            (23, 19),
         ]
 
-        # Define qubits (0 to 5)
-        qubits = range(6)
+        # Define qubits (0 to 23)
+        qubits = range(24)
 
         # Parameter for parameterized gates (RZ and Phase)
         phi = Parameter("φ")
@@ -90,8 +132,8 @@ class Yukon(Target):
     def __get_qubit_properties__(self):
         qubit_properties = None
         if ApiAdapter.instance() != None:
-            benchmark = ApiAdapter.get_benchmark("yukon")
-            for i in range(6):
+            benchmark = ApiAdapter.get_benchmark("monarq")
+            for i in range(24):
                 if qubit_properties is None:
                     qubit_properties = []
                 qubit_properties.append(
