@@ -7,7 +7,6 @@ from qiskit_calculquebec.backends.targets.yukon import (
     Yukon,
 )
 
-
 client = CalculQuebecClient("host", "user", "token", project_id="test_project_id")
 
 

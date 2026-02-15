@@ -5,7 +5,6 @@ from qiskit_calculquebec.API.client import CalculQuebecClient
 from qiskit_calculquebec.backends.monarq_backend import MonarQBackend
 from qiskit_calculquebec.backends.utils.job import MultiMonarQJob
 
-
 client = CalculQuebecClient("host", "user", "token", project_id="test_project_id")
 
 
