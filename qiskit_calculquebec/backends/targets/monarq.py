@@ -15,6 +15,7 @@ from qiskit.circuit.library import (
 )
 from qiskit.circuit import Parameter
 from qiskit.transpiler.target import QubitProperties
+from qiskit.transpiler import InstructionProperties
 
 # Custom single-qubit rotations (not in standard Qiskit)
 from qiskit_calculquebec.API.adapter import ApiAdapter
@@ -34,10 +35,8 @@ class MonarQ(Target):
 
     def __init__(self):
         super().__init__()
-        qubit_properties = self.__get_qubit_properties__()
-        self.qubit_properties = qubit_properties
-        self.name = "MonarQ"
-
+        # Define qubits (0 to 23)
+        self.qubits = range(24)
         # Define the bidirectional connectivity of the 6 qubits
         # Each tuple represents a directed edge (control, target)
         self.coupling_map = [
@@ -94,9 +93,9 @@ class MonarQ(Target):
             (22, 18),
             (23, 19),
         ]
-
-        # Define qubits (0 to 23)
-        qubits = range(24)
+        qubit_properties, gate_properties = self.__get_qubit_properties__()
+        self.qubit_properties = qubit_properties
+        self.name = "MonarQ"
 
         # Parameter for parameterized gates (RZ and Phase)
         phi = Parameter("φ")
@@ -121,25 +120,80 @@ class MonarQ(Target):
         # Add each single-qubit gate to all qubits
         for gate in single_qubit_gates:
             # Map gate to all qubits (key: tuple of qubit index)
-            gate_props = {(q,): None for q in qubits}
+            if type(gate) == Measure():
+                gate_props = {
+                    (q,): InstructionProperties(
+                        duration=5e-6, error=gate_properties["measure"][q]
+                    )
+                    for q in self.qubits
+                }
+            else:
+                gate_props = {
+                    (q,): InstructionProperties(
+                        duration=5e-8, error=gate_properties["single"][q]
+                    )
+                    for q in self.qubits
+                }
             self.add_instruction(gate, gate_props)
 
         # --- Two-qubit gates ---
         # Only CZ is supported, defined for all edges in the coupling map
-        cz_props = {edge: None for edge in self.coupling_map}
+        cz_props = {
+            edge: InstructionProperties(
+                duration=1e-7, error=gate_properties["double"][q]
+            )
+            for q, edge in enumerate(self.coupling_map)
+        }
         self.add_instruction(CZGate(), cz_props)
 
-    def __get_qubit_properties__(self):
-        qubit_properties = None
-        if ApiAdapter.instance() != None:
-            benchmark = ApiAdapter.get_benchmark("monarq")
-            for i in range(24):
-                if qubit_properties is None:
-                    qubit_properties = []
-                qubit_properties.append(
-                    QubitProperties(
-                        t1=benchmark["resultsPerDevice"]["qubits"][str(i)]["t1"],
-                        t2=benchmark["resultsPerDevice"]["qubits"][str(i)]["t2Echo"],
-                    )
-                )
-        return qubit_properties
+
+def __get_qubit_properties__(self):
+    # ✅ Always initialize the dict with the keys you index later
+    gate_properties = {
+        "single": {},
+        "measure": {},
+        "double": {},
+    }
+
+    # Sensible defaults if benchmark is unavailable
+    default_single_err = 1e-3
+    default_meas_err = 2e-2
+    default_cz_err = 2e-2
+
+    qubit_properties = [QubitProperties(t1=None, t2=None) for _ in self.qubits]
+
+    adapter = ApiAdapter.instance()
+    if adapter is not None:
+        benchmark = ApiAdapter.get_benchmark("yukon")
+
+        for i in self.qubits:
+            qb = benchmark["resultsPerDevice"]["qubits"][str(i)]
+            qubit_properties[i] = QubitProperties(
+                t1=qb.get("t1", None),
+                t2=qb.get("t2Echo", None),
+            )
+
+            gate_properties["single"][i] = 1 - qb.get(
+                "parallelSingleQubitGateFidelity", 1 - default_single_err
+            )
+            gate_properties["measure"][i] = 1 - qb.get(
+                "parallelReadoutState1Fidelity", 1 - default_meas_err
+            )
+
+        # Couplers: keep your original assumption that couplers are indexed 0..len(coupling_map)-1
+        couplers = benchmark["resultsPerDevice"].get("couplers", {})
+        for idx in range(len(self.coupling_map)):
+            c = couplers.get(str(idx), {})
+            gate_properties["double"][idx] = 1 - c.get(
+                "czGateFidelity", 1 - default_cz_err
+            )
+
+    else:
+        # No API: fill defaults
+        for i in self.qubits:
+            gate_properties["single"][i] = default_single_err
+            gate_properties["measure"][i] = default_meas_err
+        for idx in range(len(self.coupling_map)):
+            gate_properties["double"][idx] = default_cz_err
+
+    return qubit_properties, gate_properties
