@@ -12,32 +12,27 @@ client = CalculQuebecClient("host", "user", "token", project_id="test_project_id
 def monarq_target():
     """Return a MonarQ instance with API calls mocked."""
     with patch(
-        "qiskit_calculquebec.API.adapter.ApiAdapter.get_machine_by_name"
-    ) as mock_get_machine, patch(
-        "qiskit_calculquebec.API.adapter.ApiAdapter.get_benchmark"
-    ) as mock_get_benchmark, patch(
-        "qiskit_calculquebec.API.adapter.ApiAdapter.instance"
-    ) as mock_instance:
+        "qiskit_calculquebec.API.adapter.ApiAdapter.instance", autospec=True
+    ) as mock_instance, patch(
+        "qiskit_calculquebec.API.adapter.ApiAdapter.get_benchmark", autospec=True
+    ) as mock_get_benchmark:
 
-        # Mock instance to not be None
-        mock_instance.return_value = MagicMock()
+        # Make instance() return something truthy so Yukon goes into the API path
+        mock_instance.return_value = MagicMock(name="ApiAdapterSingleton")
 
-        # Mock machine info
-        mock_get_machine.return_value = {
-            "machineName": "monarq",
-            "qubits": [{"id": i, "t1": 10 + i, "t2Echo": 20 + i} for i in range(24)],
-            "instructions": [
-                {"name": "cx", "qubits": [0, 4]},
-                {"name": "rz", "qubits": [0]},
-            ],
-        }
-
-        # Mock benchmark info
         mock_get_benchmark.return_value = {
             "resultsPerDevice": {
                 "qubits": {
-                    str(i): {"t1": 10.0 + i, "t2Echo": 20.0 + i} for i in range(24)
-                }
+                    str(i): {
+                        "t1": 10.0 + i,
+                        "t2Echo": 20.0 + i,
+                        # Optional fidelities; if omitted, Yukon uses defaults
+                        "parallelSingleQubitGateFidelity": 0.999,
+                        "parallelReadoutState1Fidelity": 0.98,
+                    }
+                    for i in range(24)
+                },
+                "couplers": {str(idx): {"czGateFidelity": 0.98} for idx in range(52)},
             }
         }
 
@@ -150,6 +145,6 @@ def test_name(monarq_target):
 def test_qubit_properties(monarq_target):
     from qiskit.transpiler.target import QubitProperties
 
-    qubit_props = monarq_target.__get_qubit_properties__()
+    qubit_props, gate_properties = monarq_target.__get_qubit_properties__()
     assert isinstance(qubit_props, list)
     assert isinstance(qubit_props[0], QubitProperties)

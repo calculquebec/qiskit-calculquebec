@@ -146,54 +146,51 @@ class MonarQ(Target):
         }
         self.add_instruction(CZGate(), cz_props)
 
+    def __get_qubit_properties__(self):
+        gate_properties = {
+            "single": {},
+            "measure": {},
+            "double": {},
+        }
 
-def __get_qubit_properties__(self):
-    # ✅ Always initialize the dict with the keys you index later
-    gate_properties = {
-        "single": {},
-        "measure": {},
-        "double": {},
-    }
+        # Sensible defaults if benchmark is unavailable
+        default_single_err = 1e-3
+        default_meas_err = 2e-2
+        default_cz_err = 2e-2
 
-    # Sensible defaults if benchmark is unavailable
-    default_single_err = 1e-3
-    default_meas_err = 2e-2
-    default_cz_err = 2e-2
+        qubit_properties = [QubitProperties(t1=None, t2=None) for _ in self.qubits]
 
-    qubit_properties = [QubitProperties(t1=None, t2=None) for _ in self.qubits]
+        adapter = ApiAdapter.instance()
+        if adapter is not None:
+            benchmark = ApiAdapter.get_benchmark("yukon")
 
-    adapter = ApiAdapter.instance()
-    if adapter is not None:
-        benchmark = ApiAdapter.get_benchmark("yukon")
+            for i in self.qubits:
+                qb = benchmark["resultsPerDevice"]["qubits"][str(i)]
+                qubit_properties[i] = QubitProperties(
+                    t1=qb.get("t1", None),
+                    t2=qb.get("t2Echo", None),
+                )
 
-        for i in self.qubits:
-            qb = benchmark["resultsPerDevice"]["qubits"][str(i)]
-            qubit_properties[i] = QubitProperties(
-                t1=qb.get("t1", None),
-                t2=qb.get("t2Echo", None),
-            )
+                gate_properties["single"][i] = 1 - qb.get(
+                    "parallelSingleQubitGateFidelity", 1 - default_single_err
+                )
+                gate_properties["measure"][i] = 1 - qb.get(
+                    "parallelReadoutState1Fidelity", 1 - default_meas_err
+                )
 
-            gate_properties["single"][i] = 1 - qb.get(
-                "parallelSingleQubitGateFidelity", 1 - default_single_err
-            )
-            gate_properties["measure"][i] = 1 - qb.get(
-                "parallelReadoutState1Fidelity", 1 - default_meas_err
-            )
+            couplers = benchmark["resultsPerDevice"].get("couplers", {})
+            for idx in range(len(self.coupling_map)):
+                c = couplers.get(str(idx), {})
+                gate_properties["double"][idx] = 1 - c.get(
+                    "czGateFidelity", 1 - default_cz_err
+                )
 
-        # Couplers: keep your original assumption that couplers are indexed 0..len(coupling_map)-1
-        couplers = benchmark["resultsPerDevice"].get("couplers", {})
-        for idx in range(len(self.coupling_map)):
-            c = couplers.get(str(idx), {})
-            gate_properties["double"][idx] = 1 - c.get(
-                "czGateFidelity", 1 - default_cz_err
-            )
+        else:
+            # No API: fill defaults
+            for i in self.qubits:
+                gate_properties["single"][i] = default_single_err
+                gate_properties["measure"][i] = default_meas_err
+            for idx in range(len(self.coupling_map)):
+                gate_properties["double"][idx] = default_cz_err
 
-    else:
-        # No API: fill defaults
-        for i in self.qubits:
-            gate_properties["single"][i] = default_single_err
-            gate_properties["measure"][i] = default_meas_err
-        for idx in range(len(self.coupling_map)):
-            gate_properties["double"][idx] = default_cz_err
-
-    return qubit_properties, gate_properties
+        return qubit_properties, gate_properties

@@ -105,7 +105,6 @@ class Yukon(Target):
         self.add_instruction(CZGate(), cz_props)
 
     def __get_qubit_properties__(self):
-        # ✅ Always initialize the dict with the keys you index later
         gate_properties = {
             "single": {},
             "measure": {},
@@ -137,7 +136,6 @@ class Yukon(Target):
                     "parallelReadoutState1Fidelity", 1 - default_meas_err
                 )
 
-            # Couplers: keep your original assumption that couplers are indexed 0..len(coupling_map)-1
             couplers = benchmark["resultsPerDevice"].get("couplers", {})
             for idx in range(len(self.coupling_map)):
                 c = couplers.get(str(idx), {})
