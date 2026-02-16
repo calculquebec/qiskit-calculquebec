@@ -64,7 +64,6 @@ class AnyonTarget(Target):
         # Add each single-qubit gate to all qubits
         for gate in single_qubit_gates:
             # Map gate to all qubits (key: tuple of qubit index)
-            print(type(gate))
             if isinstance(gate, Measure):
                 gate_props = {
                     (q,): InstructionProperties(
