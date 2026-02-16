@@ -98,6 +98,7 @@ def test_coupling_map(yukon_target):
         (5, 4),
     ]
     assert yukon_target.coupling_map == expected_coupling_map
+    assert len(yukon_target.coupling_map) == 10
 
 
 def test_name(yukon_target):
