@@ -98,7 +98,7 @@ class AnyonTarget(Target):
         # Only CZ is supported, defined for all edges in the coupling map
         cz_props = {
             edge: InstructionProperties(
-                duration=1e-7, error=gate_properties["double"][q]
+                duration=1e-7, error=gate_properties["double"][q // 2]
             )
             for q, edge in enumerate(self.coupling_map)
         }
