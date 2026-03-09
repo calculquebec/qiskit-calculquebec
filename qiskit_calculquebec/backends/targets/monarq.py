@@ -3,17 +3,51 @@ from qiskit_calculquebec.backends.targets.anyon_target import AnyonTarget
 
 class MonarQ(AnyonTarget):
     """
-    Custom Qiskit Target for the MonarQ 24-qubit device.
+    Concrete target description for the MonarQ 24-qubit quantum device.
 
-    Defines:
-    - Qubit connectivity (coupling map)
-    - Supported single- and two-qubit gates
-    - Measurement operations
+    This class specializes :class:`qiskit_calculquebec.backends.targets.anyon_target.AnyonTarget`
+    for the MonarQ processor by defining its hardware topology, qubit indices,
+    and device name.
+
+    The MonarQ target inherits the default gate set, instruction registration,
+    and calibration handling logic from :class:`AnyonTarget`.
+
+    Notes
+    -----
+    The device topology is described as a directed coupling map. Each physical
+    connection is represented in both directions when bidirectional execution is
+    supported by the backend.
+
+    Examples
+    --------
+    Instantiate the target:
+
+    .. code-block:: python
+
+        target = MonarQ()
+
+    Access device metadata:
+
+    .. code-block:: python
+
+        print(target.name)
+        print(list(target.qubits))
+        print(target.coupling_map)
     """
 
-    def __init__(self):
-        self.qubits = range(24)
-        self.coupling_map = [
+    def coupling_map(self):
+        """
+        Return the MonarQ device coupling map.
+
+        The coupling map defines the directed connectivity between the physical
+        qubits of the MonarQ processor.
+
+        Returns
+        -------
+        list[tuple[int, int]]
+            List of directed qubit connections describing the hardware graph.
+        """
+        return [
             (0, 4),
             (4, 0),
             (1, 4),
@@ -86,5 +120,37 @@ class MonarQ(AnyonTarget):
             (23, 19),
         ]
 
-        self.name = "MonarQ"
-        super().__init__(self.coupling_map, self.qubits, self.name)
+    def qubits(self):
+        """
+        Return the physical qubit indices of the MonarQ device.
+
+        Returns
+        -------
+        range
+            Range object covering the 24 physical qubits of the processor.
+        """
+        return range(24)
+
+    def device_name(self):
+        """
+        Return the device name.
+
+        This name is used by the parent class to retrieve calibration and
+        benchmark information from the API.
+
+        Returns
+        -------
+        str
+            The device name, ``"MonarQ"``.
+        """
+        return "MonarQ"
+
+    def __init__(self):
+        """
+        Initialize the MonarQ target.
+
+        This constructor delegates initialization to :class:`AnyonTarget`,
+        which builds the gate set, registers instruction properties, and
+        loads calibration data when available.
+        """
+        super().__init__()
