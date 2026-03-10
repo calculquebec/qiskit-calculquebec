@@ -1,46 +1,50 @@
-from qiskit.transpiler.target import Target
-from qiskit.circuit.library import (
-    IGate,
-    XGate,
-    YGate,
-    ZGate,
-    TGate,
-    TdgGate,
-    PhaseGate,
-    CZGate,
-    RZGate,
-    SXGate,
-    SXdgGate,
-    Measure,
-)
-from qiskit.circuit import Parameter
-from qiskit.transpiler.target import QubitProperties
-
-# Custom single-qubit rotations (not in standard Qiskit)
-from qiskit_calculquebec.API.adapter import ApiAdapter
-from qiskit_calculquebec.custom_gates.ry_90_gate import RY90Gate
-from qiskit_calculquebec.custom_gates.ry_m90_gate import RYm90Gate
+from qiskit_calculquebec.backends.targets.anyon_target import AnyonTarget
 
 
-class Yukon(Target):
+class Yukon(AnyonTarget):
+    """Concrete target description for the Yukon 6-qubit quantum device.
+
+    This class specializes
+    ``qiskit_calculquebec.backends.targets.anyon_target.AnyonTarget``
+    for the Yukon processor by defining its hardware topology, available
+    qubits, and device name.
+
+    The Yukon target inherits the gate definitions, instruction properties,
+    and calibration retrieval mechanisms implemented in ``AnyonTarget``.
+
+    Note:
+        The Yukon processor is a small device composed of six qubits arranged
+        in a linear topology. Each connection between qubits is represented
+        as a directed edge in the coupling map to indicate that two-qubit
+        gates can be executed in both directions.
+
+    Example:
+        Instantiate the target:
+
+        ```python
+        target = Yukon()
+        ```
+
+        Inspect the topology:
+
+        ```python
+        print(target.name)
+        print(list(target.qubits))
+        print(target.coupling_map)
+        ```
     """
-    Custom Qiskit Target for the Yukon 6-qubit device.
 
-    Defines:
-    - Qubit connectivity (coupling map)
-    - Supported single- and two-qubit gates
-    - Measurement operations
-    """
+    def coupling_map(self):
+        """Return the Yukon device coupling map.
 
-    def __init__(self):
-        super().__init__()
-        qubit_properties = self.__get_qubit_properties__()
-        self.qubit_properties = qubit_properties
-        self.name = "Yukon"
+        The coupling map describes the directed connectivity between
+        physical qubits on the device.
 
-        # Define the bidirectional connectivity of the 6 qubits
-        # Each tuple represents a directed edge (control, target)
-        self.coupling_map = [
+        Returns:
+            list[tuple[int, int]]: Directed qubit connections representing
+            the hardware topology.
+        """
+        return [
             (0, 1),
             (1, 0),
             (1, 2),
@@ -53,51 +57,33 @@ class Yukon(Target):
             (5, 4),
         ]
 
-        # Define qubits (0 to 5)
-        qubits = range(6)
+    def qubits(self):
+        """Return the physical qubit indices of the Yukon device.
 
-        # Parameter for parameterized gates (RZ and Phase)
-        phi = Parameter("φ")
+        Returns:
+            range: Range representing the six physical qubits of the device.
+        """
+        return range(6)
 
-        # --- Single-qubit gates ---
-        single_qubit_gates = [
-            IGate(),
-            XGate(),
-            YGate(),
-            ZGate(),
-            TGate(),
-            TdgGate(),
-            RZGate(phi),
-            PhaseGate(phi),
-            SXGate(),
-            SXdgGate(),
-            Measure(),
-            RY90Gate(),
-            RYm90Gate(),  # Custom gates
-        ]
+    def device_name(self):
+        """Return the device name.
 
-        # Add each single-qubit gate to all qubits
-        for gate in single_qubit_gates:
-            # Map gate to all qubits (key: tuple of qubit index)
-            gate_props = {(q,): None for q in qubits}
-            self.add_instruction(gate, gate_props)
+        This name is used by the parent class to retrieve calibration and
+        benchmark information through the API.
 
-        # --- Two-qubit gates ---
-        # Only CZ is supported, defined for all edges in the coupling map
-        cz_props = {edge: None for edge in self.coupling_map}
-        self.add_instruction(CZGate(), cz_props)
+        Returns:
+            str: The device name ``"Yukon"``.
+        """
+        return "Yukon"
 
-    def __get_qubit_properties__(self):
-        qubit_properties = None
-        if ApiAdapter.instance() != None:
-            benchmark = ApiAdapter.get_benchmark("yukon")
-            for i in range(6):
-                if qubit_properties is None:
-                    qubit_properties = []
-                qubit_properties.append(
-                    QubitProperties(
-                        t1=benchmark["resultsPerDevice"]["qubits"][str(i)]["t1"],
-                        t2=benchmark["resultsPerDevice"]["qubits"][str(i)]["t2Echo"],
-                    )
-                )
-        return qubit_properties
+    def __init__(self):
+        """Initialize the Yukon target.
+
+        This constructor delegates initialization to ``AnyonTarget``,
+        which:
+
+        * Builds the instruction set
+        * Registers gate properties
+        * Retrieves calibration data when available
+        """
+        super().__init__()

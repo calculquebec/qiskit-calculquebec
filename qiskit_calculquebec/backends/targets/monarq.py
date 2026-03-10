@@ -1,145 +1,148 @@
-from qiskit.transpiler.target import Target
-from qiskit.circuit.library import (
-    IGate,
-    XGate,
-    YGate,
-    ZGate,
-    TGate,
-    TdgGate,
-    PhaseGate,
-    CZGate,
-    RZGate,
-    SXGate,
-    SXdgGate,
-    Measure,
-)
-from qiskit.circuit import Parameter
-from qiskit.transpiler.target import QubitProperties
-
-# Custom single-qubit rotations (not in standard Qiskit)
-from qiskit_calculquebec.API.adapter import ApiAdapter
-from qiskit_calculquebec.custom_gates.ry_90_gate import RY90Gate
-from qiskit_calculquebec.custom_gates.ry_m90_gate import RYm90Gate
+from qiskit_calculquebec.backends.targets.anyon_target import AnyonTarget
 
 
-class MonarQ(Target):
+class MonarQ(AnyonTarget):
+    """Concrete target description for the MonarQ 24-qubit quantum device.
+
+    This class specializes
+    ``qiskit_calculquebec.backends.targets.anyon_target.AnyonTarget``
+    for the MonarQ processor by defining its hardware topology,
+    qubit indices, and device name.
+
+    The MonarQ target inherits the default gate set, instruction
+    registration, and calibration handling logic from ``AnyonTarget``.
+
+    Note:
+        The device topology is described as a directed coupling map.
+        Each physical connection is represented in both directions
+        when bidirectional execution is supported by the backend.
+
+    Example:
+        Instantiate the target:
+
+        ```python
+        target = MonarQ()
+        ```
+
+        Access device metadata:
+
+        ```python
+        print(target.name)
+        print(list(target.qubits))
+        print(target.coupling_map)
+        ```
     """
-    Custom Qiskit Target for the Yukon 6-qubit device.
 
-    Defines:
-    - Qubit connectivity (coupling map)
-    - Supported single- and two-qubit gates
-    - Measurement operations
-    """
+    def coupling_map(self):
+        """Return the MonarQ device coupling map.
 
-    def __init__(self):
-        super().__init__()
-        qubit_properties = self.__get_qubit_properties__()
-        self.qubit_properties = qubit_properties
-        self.name = "MonarQ"
+        The coupling map defines the directed connectivity between
+        the physical qubits of the MonarQ processor.
 
-        # Define the bidirectional connectivity of the 6 qubits
-        # Each tuple represents a directed edge (control, target)
-        self.coupling_map = [
+        Returns:
+            list[tuple[int, int]]: Directed qubit connections describing
+            the hardware connectivity graph.
+        """
+        return [
             (0, 4),
-            (1, 5),
-            (2, 6),
-            (3, 7),
             (4, 0),
+            (1, 4),
             (4, 1),
-            (4, 8),
+            (1, 5),
             (5, 1),
+            (2, 5),
             (5, 2),
-            (5, 9),
-            (5, 10),
+            (2, 6),
             (6, 2),
+            (3, 6),
             (6, 3),
-            (6, 11),
+            (3, 7),
             (7, 3),
-            (7, 13),
+            (4, 8),
             (8, 4),
-            (8, 12),
+            (4, 9),
             (9, 4),
+            (5, 9),
             (9, 5),
-            (9, 13),
+            (5, 10),
             (10, 5),
-            (10, 10),
-            (10, 14),
+            (6, 10),
+            (10, 6),
+            (6, 11),
             (11, 6),
-            (11, 12),
-            (11, 14),
+            (7, 11),
+            (11, 7),
+            (8, 12),
             (12, 8),
-            (12, 11),
-            (12, 17),
-            (13, 7),
+            (9, 12),
+            (12, 9),
+            (9, 13),
             (13, 9),
-            (13, 18),
+            (10, 13),
+            (13, 10),
+            (10, 14),
             (14, 10),
+            (11, 14),
             (14, 11),
-            (14, 19),
+            (11, 15),
             (15, 11),
-            (15, 19),
+            (12, 16),
             (16, 12),
-            (16, 20),
+            (12, 17),
             (17, 12),
-            (17, 16),
-            (17, 21),
+            (13, 17),
+            (17, 13),
+            (13, 18),
             (18, 13),
-            (18, 22),
+            (14, 18),
+            (18, 14),
+            (14, 19),
             (19, 14),
+            (15, 19),
             (19, 15),
-            (19, 23),
+            (16, 20),
             (20, 16),
+            (17, 20),
+            (20, 17),
+            (17, 21),
             (21, 17),
+            (18, 21),
+            (21, 18),
+            (18, 22),
             (22, 18),
+            (19, 22),
+            (22, 19),
+            (19, 23),
             (23, 19),
         ]
 
-        # Define qubits (0 to 23)
-        qubits = range(24)
+    def qubits(self):
+        """Return the physical qubit indices of the MonarQ device.
 
-        # Parameter for parameterized gates (RZ and Phase)
-        phi = Parameter("φ")
+        Returns:
+            range: Range covering the 24 physical qubits of the processor.
+        """
+        return range(24)
 
-        # --- Single-qubit gates ---
-        single_qubit_gates = [
-            IGate(),
-            XGate(),
-            YGate(),
-            ZGate(),
-            TGate(),
-            TdgGate(),
-            RZGate(phi),
-            PhaseGate(phi),
-            SXGate(),
-            SXdgGate(),
-            Measure(),
-            RY90Gate(),
-            RYm90Gate(),  # Custom gates
-        ]
+    def device_name(self):
+        """Return the device name.
 
-        # Add each single-qubit gate to all qubits
-        for gate in single_qubit_gates:
-            # Map gate to all qubits (key: tuple of qubit index)
-            gate_props = {(q,): None for q in qubits}
-            self.add_instruction(gate, gate_props)
+        This name is used by the parent class to retrieve calibration
+        and benchmark information from the API.
 
-        # --- Two-qubit gates ---
-        # Only CZ is supported, defined for all edges in the coupling map
-        cz_props = {edge: None for edge in self.coupling_map}
-        self.add_instruction(CZGate(), cz_props)
+        Returns:
+            str: The device name ``"MonarQ"``.
+        """
+        return "MonarQ"
 
-    def __get_qubit_properties__(self):
-        qubit_properties = None
-        if ApiAdapter.instance() != None:
-            benchmark = ApiAdapter.get_benchmark("monarq")
-            for i in range(24):
-                if qubit_properties is None:
-                    qubit_properties = []
-                qubit_properties.append(
-                    QubitProperties(
-                        t1=benchmark["resultsPerDevice"]["qubits"][str(i)]["t1"],
-                        t2=benchmark["resultsPerDevice"]["qubits"][str(i)]["t2Echo"],
-                    )
-                )
-        return qubit_properties
+    def __init__(self):
+        """Initialize the MonarQ target.
+
+        This constructor delegates initialization to ``AnyonTarget``,
+        which:
+
+        * Builds the supported gate set
+        * Registers instruction properties
+        * Loads calibration data when available
+        """
+        super().__init__()

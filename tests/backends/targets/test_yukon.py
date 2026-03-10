@@ -7,7 +7,6 @@ from qiskit_calculquebec.backends.targets.yukon import (
     Yukon,
 )
 
-
 client = CalculQuebecClient("host", "user", "token", project_id="test_project_id")
 
 
@@ -15,32 +14,31 @@ client = CalculQuebecClient("host", "user", "token", project_id="test_project_id
 def yukon_target():
     """Return a Yukon instance with API calls mocked."""
     with patch(
-        "qiskit_calculquebec.API.adapter.ApiAdapter.get_machine_by_name"
-    ) as mock_get_machine, patch(
-        "qiskit_calculquebec.API.adapter.ApiAdapter.get_benchmark"
-    ) as mock_get_benchmark, patch(
-        "qiskit_calculquebec.API.adapter.ApiAdapter.instance"
-    ) as mock_instance:
+        "qiskit_calculquebec.API.adapter.ApiAdapter.instance", autospec=True
+    ) as mock_instance, patch(
+        "qiskit_calculquebec.API.adapter.ApiAdapter.get_benchmark", autospec=True
+    ) as mock_get_benchmark:
 
-        # Ensure instance() returns something non-None
-        mock_instance.return_value = MagicMock()
+        # Make instance() return something truthy so Yukon goes into the API path
+        mock_instance.return_value = MagicMock(name="ApiAdapterSingleton")
 
-        # Mock machine info
-        mock_get_machine.return_value = {
-            "machineName": "yukon",
-            "qubits": [{"id": i, "t1": 10 + i, "t2Echo": 20 + i} for i in range(6)],
-            "instructions": [
-                {"name": "cx", "qubits": [0, 4]},
-                {"name": "rz", "qubits": [0]},
-            ],
-        }
-
-        # Mock benchmark info
+        # Build exactly what Yukon.__get_qubit_properties__ expects
         mock_get_benchmark.return_value = {
             "resultsPerDevice": {
                 "qubits": {
-                    str(i): {"t1": 10.0 + i, "t2Echo": 20.0 + i} for i in range(6)
-                }
+                    str(i): {
+                        "t1": 10.0 + i,
+                        "t2Echo": 20.0 + i,
+                        "parallelSingleQubitGateFidelity": 0.999,
+                        "parallelReadoutState1Fidelity": 0.98,
+                    }
+                    for i in range(6)
+                },
+                "couplers": {
+                    # Yukon indexes couplers by str(idx) where idx enumerates coupling_map
+                    str(idx): {"czGateFidelity": 0.98}
+                    for idx in range(12)
+                },
             }
         }
 
@@ -100,6 +98,7 @@ def test_coupling_map(yukon_target):
         (5, 4),
     ]
     assert yukon_target.coupling_map == expected_coupling_map
+    assert len(yukon_target.coupling_map) == 10
 
 
 def test_name(yukon_target):
@@ -109,6 +108,6 @@ def test_name(yukon_target):
 def test_qubit_properties(yukon_target):
     from qiskit.transpiler.target import QubitProperties
 
-    qubit_props = yukon_target.__get_qubit_properties__()
+    qubit_props, gate_properties = yukon_target.__get_qubit_properties__()
     assert isinstance(qubit_props, list)
     assert isinstance(qubit_props[0], QubitProperties)

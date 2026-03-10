@@ -12,32 +12,27 @@ client = CalculQuebecClient("host", "user", "token", project_id="test_project_id
 def monarq_target():
     """Return a MonarQ instance with API calls mocked."""
     with patch(
-        "qiskit_calculquebec.API.adapter.ApiAdapter.get_machine_by_name"
-    ) as mock_get_machine, patch(
-        "qiskit_calculquebec.API.adapter.ApiAdapter.get_benchmark"
-    ) as mock_get_benchmark, patch(
-        "qiskit_calculquebec.API.adapter.ApiAdapter.instance"
-    ) as mock_instance:
+        "qiskit_calculquebec.API.adapter.ApiAdapter.instance", autospec=True
+    ) as mock_instance, patch(
+        "qiskit_calculquebec.API.adapter.ApiAdapter.get_benchmark", autospec=True
+    ) as mock_get_benchmark:
 
-        # Mock instance to not be None
-        mock_instance.return_value = MagicMock()
+        # Make instance() return something truthy so Yukon goes into the API path
+        mock_instance.return_value = MagicMock(name="ApiAdapterSingleton")
 
-        # Mock machine info
-        mock_get_machine.return_value = {
-            "machineName": "monarq",
-            "qubits": [{"id": i, "t1": 10 + i, "t2Echo": 20 + i} for i in range(24)],
-            "instructions": [
-                {"name": "cx", "qubits": [0, 4]},
-                {"name": "rz", "qubits": [0]},
-            ],
-        }
-
-        # Mock benchmark info
         mock_get_benchmark.return_value = {
             "resultsPerDevice": {
                 "qubits": {
-                    str(i): {"t1": 10.0 + i, "t2Echo": 20.0 + i} for i in range(24)
-                }
+                    str(i): {
+                        "t1": 10.0 + i,
+                        "t2Echo": 20.0 + i,
+                        # Optional fidelities; if omitted, Yukon uses defaults
+                        "parallelSingleQubitGateFidelity": 0.999,
+                        "parallelReadoutState1Fidelity": 0.98,
+                    }
+                    for i in range(24)
+                },
+                "couplers": {str(idx): {"czGateFidelity": 0.98} for idx in range(52)},
             }
         }
 
@@ -88,59 +83,78 @@ def test_parameterized_gates_have_parameters(monarq_target):
 def test_coupling_map(monarq_target):
     expected_coupling_map = [
         (0, 4),
-        (1, 5),
-        (2, 6),
-        (3, 7),
         (4, 0),
+        (1, 4),
         (4, 1),
-        (4, 8),
+        (1, 5),
         (5, 1),
+        (2, 5),
         (5, 2),
-        (5, 9),
-        (5, 10),
+        (2, 6),
         (6, 2),
+        (3, 6),
         (6, 3),
-        (6, 11),
+        (3, 7),
         (7, 3),
-        (7, 13),
+        (4, 8),
         (8, 4),
-        (8, 12),
+        (4, 9),
         (9, 4),
+        (5, 9),
         (9, 5),
-        (9, 13),
+        (5, 10),
         (10, 5),
-        (10, 10),
-        (10, 14),
+        (6, 10),
+        (10, 6),
+        (6, 11),
         (11, 6),
-        (11, 12),
-        (11, 14),
+        (7, 11),
+        (11, 7),
+        (8, 12),
         (12, 8),
-        (12, 11),
-        (12, 17),
-        (13, 7),
+        (9, 12),
+        (12, 9),
+        (9, 13),
         (13, 9),
-        (13, 18),
+        (10, 13),
+        (13, 10),
+        (10, 14),
         (14, 10),
+        (11, 14),
         (14, 11),
-        (14, 19),
+        (11, 15),
         (15, 11),
-        (15, 19),
+        (12, 16),
         (16, 12),
-        (16, 20),
+        (12, 17),
         (17, 12),
-        (17, 16),
-        (17, 21),
+        (13, 17),
+        (17, 13),
+        (13, 18),
         (18, 13),
-        (18, 22),
+        (14, 18),
+        (18, 14),
+        (14, 19),
         (19, 14),
+        (15, 19),
         (19, 15),
-        (19, 23),
+        (16, 20),
         (20, 16),
+        (17, 20),
+        (20, 17),
+        (17, 21),
         (21, 17),
+        (18, 21),
+        (21, 18),
+        (18, 22),
         (22, 18),
+        (19, 22),
+        (22, 19),
+        (19, 23),
         (23, 19),
     ]
     assert monarq_target.coupling_map == expected_coupling_map
+    assert len(monarq_target.coupling_map) == 70
 
 
 def test_name(monarq_target):
@@ -150,6 +164,6 @@ def test_name(monarq_target):
 def test_qubit_properties(monarq_target):
     from qiskit.transpiler.target import QubitProperties
 
-    qubit_props = monarq_target.__get_qubit_properties__()
+    qubit_props, gate_properties = monarq_target.__get_qubit_properties__()
     assert isinstance(qubit_props, list)
     assert isinstance(qubit_props[0], QubitProperties)
