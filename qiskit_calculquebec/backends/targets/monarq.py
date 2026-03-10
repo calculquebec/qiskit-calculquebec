@@ -2,50 +2,46 @@ from qiskit_calculquebec.backends.targets.anyon_target import AnyonTarget
 
 
 class MonarQ(AnyonTarget):
-    """
-    Concrete target description for the MonarQ 24-qubit quantum device.
+    """Concrete target description for the MonarQ 24-qubit quantum device.
 
-    This class specializes :class:`qiskit_calculquebec.backends.targets.anyon_target.AnyonTarget`
-    for the MonarQ processor by defining its hardware topology, qubit indices,
-    and device name.
+    This class specializes
+    ``qiskit_calculquebec.backends.targets.anyon_target.AnyonTarget``
+    for the MonarQ processor by defining its hardware topology,
+    qubit indices, and device name.
 
-    The MonarQ target inherits the default gate set, instruction registration,
-    and calibration handling logic from :class:`AnyonTarget`.
+    The MonarQ target inherits the default gate set, instruction
+    registration, and calibration handling logic from ``AnyonTarget``.
 
-    Notes
-    -----
-    The device topology is described as a directed coupling map. Each physical
-    connection is represented in both directions when bidirectional execution is
-    supported by the backend.
+    Note:
+        The device topology is described as a directed coupling map.
+        Each physical connection is represented in both directions
+        when bidirectional execution is supported by the backend.
 
-    Examples
-    --------
-    Instantiate the target:
+    Example:
+        Instantiate the target:
 
-    .. code-block:: python
-
+        ```python
         target = MonarQ()
+        ```
 
-    Access device metadata:
+        Access device metadata:
 
-    .. code-block:: python
-
+        ```python
         print(target.name)
         print(list(target.qubits))
         print(target.coupling_map)
+        ```
     """
 
     def coupling_map(self):
-        """
-        Return the MonarQ device coupling map.
+        """Return the MonarQ device coupling map.
 
-        The coupling map defines the directed connectivity between the physical
-        qubits of the MonarQ processor.
+        The coupling map defines the directed connectivity between
+        the physical qubits of the MonarQ processor.
 
-        Returns
-        -------
-        list[tuple[int, int]]
-            List of directed qubit connections describing the hardware graph.
+        Returns:
+            list[tuple[int, int]]: Directed qubit connections describing
+            the hardware connectivity graph.
         """
         return [
             (0, 4),
@@ -121,36 +117,32 @@ class MonarQ(AnyonTarget):
         ]
 
     def qubits(self):
-        """
-        Return the physical qubit indices of the MonarQ device.
+        """Return the physical qubit indices of the MonarQ device.
 
-        Returns
-        -------
-        range
-            Range object covering the 24 physical qubits of the processor.
+        Returns:
+            range: Range covering the 24 physical qubits of the processor.
         """
         return range(24)
 
     def device_name(self):
-        """
-        Return the device name.
+        """Return the device name.
 
-        This name is used by the parent class to retrieve calibration and
-        benchmark information from the API.
+        This name is used by the parent class to retrieve calibration
+        and benchmark information from the API.
 
-        Returns
-        -------
-        str
-            The device name, ``"MonarQ"``.
+        Returns:
+            str: The device name ``"MonarQ"``.
         """
         return "MonarQ"
 
     def __init__(self):
-        """
-        Initialize the MonarQ target.
+        """Initialize the MonarQ target.
 
-        This constructor delegates initialization to :class:`AnyonTarget`,
-        which builds the gate set, registers instruction properties, and
-        loads calibration data when available.
+        This constructor delegates initialization to ``AnyonTarget``,
+        which:
+
+        * Builds the supported gate set
+        * Registers instruction properties
+        * Loads calibration data when available
         """
         super().__init__()

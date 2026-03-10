@@ -25,104 +25,88 @@ from abc import ABC, abstractmethod
 
 
 class AnyonTarget(Target, ABC):
-    """
-    Abstract base class describing a quantum hardware target for Anyon devices.
+    """Abstract base class describing a quantum hardware target for Anyon devices.
 
-    This class extends :class:`qiskit.transpiler.Target` and provides a common
+    This class extends ``qiskit.transpiler.Target`` and provides a common
     interface for defining the characteristics of Anyon-based quantum devices,
     such as Yukon or MonarQ.
 
     The target defines:
-
-    * The physical qubits available on the device
-    * The device coupling map
-    * The supported gate set
-    * Gate durations and error rates
-    * Measurement operations
+        * The physical qubits available on the device
+        * The device coupling map
+        * The supported gate set
+        * Gate durations and error rates
+        * Measurement operations
 
     Hardware calibration data (gate errors, measurement errors, and coherence
-    times) are optionally retrieved through the
-    :class:`qiskit_calculquebec.API.adapter.ApiAdapter`.
+    times) are optionally retrieved through
+    ``qiskit_calculquebec.API.adapter.ApiAdapter``.
 
     Subclasses must implement methods describing the hardware topology.
 
-    Notes
-    -----
-    This class is abstract and cannot be instantiated directly. Concrete
-    subclasses must implement:
+    Note:
+        This class is abstract and cannot be instantiated directly. Concrete
+        subclasses must implement:
 
-    * :meth:`coupling_map`
-    * :meth:`qubits`
-    * :meth:`device_name`
+        * ``coupling_map()``
+        * ``qubits()``
+        * ``device_name()``
 
-    Examples
-    --------
+    Example:
+        Example of a concrete device target:
 
-    Example of a concrete device target:
-
-    .. code-block:: python
-
+        ```python
         class Yukon(AnyonTarget):
 
             def coupling_map(self):
-                return [(0,1),(1,0),(1,2),(2,1)]
+                return [(0, 1), (1, 0), (1, 2), (2, 1)]
 
             def qubits(self):
                 return list(range(6))
 
             def device_name(self):
                 return "Yukon"
+        ```
     """
 
     @abstractmethod
     def coupling_map(self):
-        """
-        Return the device coupling map.
+        """Return the device coupling map.
 
         The coupling map defines the connectivity between physical qubits.
 
-        Returns
-        -------
-        list[tuple[int, int]]
-            List of directed qubit connections.
+        Returns:
+            list[tuple[int, int]]: List of directed qubit connections.
         """
         pass
 
     @abstractmethod
     def qubits(self):
-        """
-        Return the list of physical qubits available on the device.
+        """Return the list of physical qubits available on the device.
 
-        Returns
-        -------
-        list[int]
-            Indices of physical qubits.
+        Returns:
+            list[int]: Indices of physical qubits.
         """
         pass
 
     @abstractmethod
     def device_name(self):
-        """
-        Return the name of the quantum device.
+        """Return the name of the quantum device.
 
-        Returns
-        -------
-        str
-            Device name used to retrieve calibration data.
+        Returns:
+            str: Device name used to retrieve calibration data.
         """
         pass
 
     def __init__(self):
-        """
-        Initialize the hardware target.
+        """Initialize the hardware target.
 
         This constructor:
-
-        * Initializes the Qiskit :class:`Target`
-        * Loads qubit properties
-        * Defines the default gate set
-        * Registers supported instructions with their associated
-          duration and error rates.
+            * Initializes the Qiskit ``Target``
+            * Loads qubit properties
+            * Defines the default gate set
+            * Registers supported instructions with their associated
+              duration and error rates
         """
         super().__init__()
 
@@ -140,15 +124,13 @@ class AnyonTarget(Target, ABC):
         self.__set_two_qubit_gate_properties__(gate_properties)
 
     def __set_two_qubit_gate_properties__(self, gate_properties):
-        """
-        Register two-qubit gates supported by the device.
+        """Register two-qubit gates supported by the device.
 
-        Currently only the :class:`CZGate` is supported.
+        Currently only the ``CZGate`` is supported.
 
-        Parameters
-        ----------
-        gate_properties : dict
-            Dictionary containing calibrated gate error rates.
+        Args:
+            gate_properties (dict): Dictionary containing calibrated gate error
+                rates.
         """
         cz_props = {
             edge: InstructionProperties(
@@ -161,16 +143,14 @@ class AnyonTarget(Target, ABC):
         self.add_instruction(CZGate(), cz_props)
 
     def __set_single_qubit_gate_properties__(self, gate_properties):
-        """
-        Register single-qubit gates for all qubits.
+        """Register single-qubit gates for all qubits.
 
         Each instruction is added to the target with associated duration
         and error properties.
 
-        Parameters
-        ----------
-        gate_properties : dict
-            Dictionary containing single-qubit and measurement errors.
+        Args:
+            gate_properties (dict): Dictionary containing single-qubit and
+                measurement errors.
         """
         for gate in self.default_single_qubit_gates:
 
@@ -212,13 +192,10 @@ class AnyonTarget(Target, ABC):
             self.add_instruction(gate, gate_props)
 
     def __define_default_gates__(self, phi):
-        """
-        Define the default gate set supported by Anyon devices.
+        """Define the default gate set supported by Anyon devices.
 
-        Parameters
-        ----------
-        phi : Parameter
-            Parameter used for parameterized rotation gates.
+        Args:
+            phi (Parameter): Parameter used for parameterized rotation gates.
         """
 
         self.default_single_qubit_gates = [
@@ -240,17 +217,16 @@ class AnyonTarget(Target, ABC):
         self.default_two_qubit_gates = [CZGate()]
 
     def __get_qubit_properties__(self):
-        """
-        Retrieve device calibration data.
+        """Retrieve device calibration data.
 
         Calibration data is retrieved from the Anyon API when available.
         If the API is unavailable, default error values are used.
 
-        Returns
-        -------
-        tuple[list[QubitProperties], dict]
-            * List of qubit properties (T1, T2)
-            * Dictionary containing gate error information
+        Returns:
+            tuple[list[QubitProperties], dict]: A tuple containing:
+
+                * The list of qubit properties (T1, T2)
+                * A dictionary containing gate error information
         """
 
         gate_properties = {

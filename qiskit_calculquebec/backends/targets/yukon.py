@@ -2,54 +2,47 @@ from qiskit_calculquebec.backends.targets.anyon_target import AnyonTarget
 
 
 class Yukon(AnyonTarget):
-    """
-    Concrete target description for the Yukon 6-qubit quantum device.
+    """Concrete target description for the Yukon 6-qubit quantum device.
 
     This class specializes
-    :class:`qiskit_calculquebec.backends.targets.anyon_target.AnyonTarget`
+    ``qiskit_calculquebec.backends.targets.anyon_target.AnyonTarget``
     for the Yukon processor by defining its hardware topology, available
     qubits, and device name.
 
     The Yukon target inherits the gate definitions, instruction properties,
-    and calibration retrieval mechanisms implemented in
-    :class:`AnyonTarget`.
+    and calibration retrieval mechanisms implemented in ``AnyonTarget``.
 
-    Notes
-    -----
-    The Yukon processor is a small device composed of six qubits arranged in
-    a linear topology. Each connection between qubits is represented as a
-    directed edge in the coupling map to indicate that two-qubit gates can be
-    executed in both directions.
+    Note:
+        The Yukon processor is a small device composed of six qubits arranged
+        in a linear topology. Each connection between qubits is represented
+        as a directed edge in the coupling map to indicate that two-qubit
+        gates can be executed in both directions.
 
-    Examples
-    --------
-    Instantiate the target:
+    Example:
+        Instantiate the target:
 
-    .. code-block:: python
-
+        ```python
         target = Yukon()
+        ```
 
-    Inspect the topology:
+        Inspect the topology:
 
-    .. code-block:: python
-
+        ```python
         print(target.name)
         print(list(target.qubits))
         print(target.coupling_map)
+        ```
     """
 
     def coupling_map(self):
-        """
-        Return the Yukon device coupling map.
+        """Return the Yukon device coupling map.
 
         The coupling map describes the directed connectivity between
         physical qubits on the device.
 
-        Returns
-        -------
-        list[tuple[int, int]]
-            List of directed qubit connections representing the device
-            hardware topology.
+        Returns:
+            list[tuple[int, int]]: Directed qubit connections representing
+            the hardware topology.
         """
         return [
             (0, 1),
@@ -65,37 +58,32 @@ class Yukon(AnyonTarget):
         ]
 
     def qubits(self):
-        """
-        Return the physical qubit indices of the Yukon device.
+        """Return the physical qubit indices of the Yukon device.
 
-        Returns
-        -------
-        range
-            Range object representing the six physical qubits of the device.
+        Returns:
+            range: Range representing the six physical qubits of the device.
         """
         return range(6)
 
     def device_name(self):
-        """
-        Return the device name.
+        """Return the device name.
 
         This name is used by the parent class to retrieve calibration and
         benchmark information through the API.
 
-        Returns
-        -------
-        str
-            The device name, ``"Yukon"``.
+        Returns:
+            str: The device name ``"Yukon"``.
         """
         return "Yukon"
 
     def __init__(self):
-        """
-        Initialize the Yukon target.
+        """Initialize the Yukon target.
 
-        This constructor delegates initialization to the parent
-        :class:`AnyonTarget`, which builds the instruction set,
-        registers gate properties, and retrieves calibration data
-        when available.
+        This constructor delegates initialization to ``AnyonTarget``,
+        which:
+
+        * Builds the instruction set
+        * Registers gate properties
+        * Retrieves calibration data when available
         """
         super().__init__()
