@@ -10,6 +10,7 @@ from qiskit.transpiler.passes import RemoveBarriers
 
 from qiskit_calculquebec.API.adapter import ApiAdapter
 from qiskit_calculquebec.API.client import ApiClient
+from qiskit_calculquebec.backends.targets.anyon_target import DT
 from qiskit_calculquebec.backends.targets.monarq import MonarQ
 from qiskit_calculquebec.backends.targets.yukon import Yukon
 from qiskit_calculquebec.backends.utils.job import MultiMonarQJob
@@ -34,6 +35,21 @@ class MonarQBackend(Backend):
     def target(self):
         """Return the backend target object."""
         return self._target
+
+    @property
+    def dt(self) -> float:
+        """Return the system time resolution of input signals in seconds.
+
+        This value (``dt``) is the hardware clock cycle used by the Qiskit
+        transpiler to convert gate and :class:`~qiskit.circuit.Delay` durations
+        expressed in seconds into integer multiples of the hardware timestep.
+
+        Returns
+        -------
+        float
+            Clock period in seconds (32 ns for Anyon devices).
+        """
+        return DT
 
     @property
     def max_circuits(self):
