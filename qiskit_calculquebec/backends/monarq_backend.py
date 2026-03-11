@@ -1,12 +1,15 @@
 import warnings
+import math
 import numpy as np
-from qiskit.circuit import Measure
+from qiskit.circuit import Measure, Delay
+from qiskit.circuit.library import IGate
 from qiskit import generate_preset_pass_manager
 from qiskit.providers import BackendV2 as Backend
 from qiskit.providers import Options
 from qiskit.transpiler.basepasses import TransformationPass
 from qiskit.transpiler import PassManager
 from qiskit.transpiler.passes import RemoveBarriers
+from qiskit.dagcircuit import DAGOpNode
 
 from qiskit_calculquebec.API.adapter import ApiAdapter
 from qiskit_calculquebec.API.client import ApiClient
@@ -149,22 +152,100 @@ class MonarQBackend(Backend):
                     dag.substitute_node(node, RYm90Gate())
             return dag
 
+    class DelayToIdentityPass(TransformationPass):
+        """
+        Transpiler pass to expand each :class:`~qiskit.circuit.Delay` into a
+        sequence of :class:`~qiskit.circuit.library.IGate` operations.
+
+        On Anyon hardware, ``IGate`` is the native idle instruction and
+        corresponds to exactly one hardware clock cycle (``dt = 32 ns``).
+        A ``Delay`` of *n* dt is therefore equivalent to *n* consecutive
+        ``IGate`` applications on the same qubit.
+
+        The duration of the ``Delay`` must be expressed in ``dt`` units
+        (i.e. the circuit must have been scheduled before this pass runs,
+        or the delay must have been inserted with ``unit='dt'``).  Delays
+        given in seconds are converted to dt by dividing by ``DT`` and
+        rounding to the nearest integer; a warning is emitted when rounding
+        is necessary.
+
+        Parameters
+        ----------
+        dt : float
+            Hardware clock period in seconds.  Defaults to
+            :data:`~qiskit_calculquebec.backends.targets.anyon_target.DT`.
+
+        Examples
+        --------
+        >>> pass_ = MonarQBackend.DelayToIdentityPass()
+        >>> pm = PassManager([pass_])
+        >>> expanded = pm.run(scheduled_circuit)
+        """
+
+        def __init__(self, dt: float = DT):
+            super().__init__()
+            self.dt = dt
+
+        def run(self, dag):
+            for node in dag.op_nodes():
+                if not isinstance(node.op, Delay):
+                    continue
+
+                duration = node.op.duration
+                unit = node.op.unit
+
+                # --- resolve duration to an integer number of dt cycles ---
+                if unit == "dt":
+                    n_cycles = int(duration)
+                else:
+                    # convert seconds (or ns/µs) to seconds first
+                    unit_to_seconds = {"s": 1, "ms": 1e-3, "us": 1e-6, "ns": 1e-9}
+                    duration_s = duration * unit_to_seconds.get(unit, 1)
+                    n_cycles_exact = duration_s / self.dt
+                    n_cycles = round(n_cycles_exact)
+                    if not math.isclose(n_cycles_exact, n_cycles, rel_tol=1e-6):
+                        warnings.warn(
+                            f"Delay duration {duration} [{unit}] is not an exact "
+                            f"multiple of dt={self.dt} s. "
+                            f"Rounded from {n_cycles_exact:.4f} to {n_cycles} IGate(s).",
+                            UserWarning,
+                        )
+
+                if n_cycles <= 0:
+                    dag.remove_op_node(node)
+                    continue
+
+                # --- replace the Delay node with n_cycles IGate nodes ---
+                qubit = node.qargs[0]
+                dag.remove_op_node(node)
+                # re-fetch the predecessor/successor so we can insert in-place;
+                # substitute_node is unavailable after remove, so we use
+                # apply_operation_back on the original DAG — the relative order
+                # is preserved because all other nodes are untouched.
+                for _ in range(n_cycles):
+                    dag.apply_operation_back(IGate(), qargs=(qubit,), cargs=())
+
+            return dag
+
     def transpile(self, circuit):
         """
         Transpile a circuit with:
         1. Replacement of RY(±π/2) gates
-        2. Level-3 preset optimization passes
+        2. Expansion of Delay gates into sequences of IGate
+        3. Level-3 preset optimization passes
         """
         # Step 1: create Qiskit level-3 preset pass manager
         pm3 = generate_preset_pass_manager(optimization_level=3, backend=self)
 
-        # Step 2: create a small pass manager for RY replacement
+        # Step 2: create pass managers for RY replacement and Delay expansion
         pm_replace = PassManager([self.ReplaceRYPass()])
+        pm_delay = PassManager([self.DelayToIdentityPass(dt=DT)])
 
-        # Step 3: run replacement first, then level-3 passes
+        # Step 3: replacement → delay expansion → level-3 passes
         def run_custom_pm(circuit_or_dag):
             dag = circuit_or_dag
             dag = pm_replace.run(dag)
+            dag = pm_delay.run(dag)
             dag = pm3.run(dag)
             return dag
 
