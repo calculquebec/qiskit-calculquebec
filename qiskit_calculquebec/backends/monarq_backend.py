@@ -234,9 +234,7 @@ class MonarQBackend(Backend):
                 mini_dag = DAGCircuit()
                 mini_dag.add_qubits(node.qargs)
                 for _ in range(n_cycles):
-                    mini_dag.apply_operation_back(
-                        IGate(), qargs=node.qargs, cargs=[]
-                    )
+                    mini_dag.apply_operation_back(IGate(), qargs=node.qargs, cargs=[])
                 dag.substitute_node_with_dag(node, mini_dag)
 
             return dag

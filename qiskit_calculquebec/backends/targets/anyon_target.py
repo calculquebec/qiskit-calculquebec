@@ -23,7 +23,6 @@ from qiskit_calculquebec.custom_gates.ry_m90_gate import RYm90Gate
 
 from abc import ABC, abstractmethod
 
-
 DT = 32e-9
 """System time resolution (in seconds) of input signals for Anyon devices.
 
