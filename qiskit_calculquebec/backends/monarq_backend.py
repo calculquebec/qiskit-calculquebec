@@ -30,6 +30,7 @@ class MonarQBackend(Backend):
     - Validates measurement placement
     - Supports multi-circuit jobs with MultiMonarQJob
     - Transpilation includes automatic RY(±π/2) replacement
+    - Delay gates are automatically expanded into IGate sequences
     """
 
     _client: ApiClient
@@ -114,18 +115,29 @@ class MonarQBackend(Backend):
         """
         Submit circuits to the backend and return a MultiMonarQJob.
 
+        Automatically applies :class:`DelayToIdentityPass` after any external
+        optimization, so :class:`~qiskit.circuit.Delay` gates are always
+        expanded into ``IGate`` sequences before reaching the hardware.
+
         Args:
             circuits: Circuit or list of circuits to execute.
-            shots: Optional number of shots to execute (capped at 1000).
+            shots: Optional number of shots to execute (capped at 1024).
         """
         if not isinstance(circuits, (list, tuple)):
             circuits = [circuits]
 
-        # Validate measurement placement
-        self._validate_circuit(circuits)
-
         # Remove barriers to simplify transpilation/execution
         circuits = RemoveBarriers()(circuits)
+
+        # Validate measurement placement BEFORE Delay expansion,
+        # since IGate sequences are appended at the end of the DAG
+        # and would incorrectly trigger the "gate after measurement" check.
+        self._validate_circuit(circuits)
+
+        # Expand any Delay gates into IGate sequences AFTER all optimization,
+        # so the IGate sequences are never eliminated by the optimizer.
+        pm_delay = PassManager([self.DelayToIdentityPass(dt=DT)])
+        circuits = [pm_delay.run(qc) for qc in circuits]
 
         shots = kwargs.get("shots", getattr(self.options, "shots", 1024))
         if shots > 1024:
@@ -187,6 +199,8 @@ class MonarQBackend(Backend):
             self.dt = dt
 
         def run(self, dag):
+            from qiskit.dagcircuit import DAGCircuit
+
             for node in dag.op_nodes():
                 if not isinstance(node.op, Delay):
                     continue
@@ -198,7 +212,6 @@ class MonarQBackend(Backend):
                 if unit == "dt":
                     n_cycles = int(duration)
                 else:
-                    # convert seconds (or ns/µs) to seconds first
                     unit_to_seconds = {"s": 1, "ms": 1e-3, "us": 1e-6, "ns": 1e-9}
                     duration_s = duration * unit_to_seconds.get(unit, 1)
                     n_cycles_exact = duration_s / self.dt
@@ -215,17 +228,65 @@ class MonarQBackend(Backend):
                     dag.remove_op_node(node)
                     continue
 
-                # --- replace the Delay node with n_cycles IGate nodes ---
-                qubit = node.qargs[0]
-                dag.remove_op_node(node)
-                # re-fetch the predecessor/successor so we can insert in-place;
-                # substitute_node is unavailable after remove, so we use
-                # apply_operation_back on the original DAG — the relative order
-                # is preserved because all other nodes are untouched.
+                # Build a mini DAG with n_cycles IGate in series on 1 qubit,
+                # then substitute the Delay node with it in-place.
+                # This preserves the topological order of the circuit.
+                mini_dag = DAGCircuit()
+                mini_dag.add_qubits(node.qargs)
                 for _ in range(n_cycles):
-                    dag.apply_operation_back(IGate(), qargs=(qubit,), cargs=())
+                    mini_dag.apply_operation_back(
+                        IGate(), qargs=node.qargs, cargs=[]
+                    )
+                dag.substitute_node_with_dag(node, mini_dag)
 
             return dag
+
+    def get_pass_manager(self, optimization_level: int = 3) -> "StagedPassManager":
+        """
+        Return a fully configured pass manager for this backend.
+
+        This is the recommended way to transpile circuits intended for
+        MonarQ/Yukon. It wraps :func:`~qiskit.transpiler.generate_preset_pass_manager`
+        and injects the two backend-specific transformation passes:
+
+        * :class:`ReplaceRYPass` — rewrites ``RY(±π/2)`` to native
+          ``RY90`` / ``RYm90`` gates.
+        * :class:`DelayToIdentityPass` — expands every
+          :class:`~qiskit.circuit.Delay` into the equivalent number of
+          ``IGate`` operations (1 ``IGate`` = 1 dt = 32 ns).
+
+        Parameters
+        ----------
+        optimization_level : int
+            Preset optimisation level passed to
+            :func:`~qiskit.transpiler.generate_preset_pass_manager` (0–3).
+            Defaults to 3.
+
+        Returns
+        -------
+        StagedPassManager
+            A staged pass manager ready to call ``.run(circuit)``.
+
+        Examples
+        --------
+        .. code-block:: python
+
+            pm = backend.get_pass_manager(optimization_level=3)
+            transpiled_qc = pm.run(qc)
+
+            sampler = Sampler(mode=backend)
+            job = sampler.run([transpiled_qc], shots=1000)
+        """
+        pm = generate_preset_pass_manager(
+            optimization_level=optimization_level, backend=self
+        )
+        # Append custom passes after the standard optimization stages so that
+        # the preset passes can still optimize freely, then we finalize with
+        # the hardware-specific rewrites.
+        pm.post_translation = PassManager(
+            [self.ReplaceRYPass(), self.DelayToIdentityPass(dt=DT)]
+        )
+        return pm
 
     def transpile(self, circuit):
         """
@@ -234,19 +295,4 @@ class MonarQBackend(Backend):
         2. Expansion of Delay gates into sequences of IGate
         3. Level-3 preset optimization passes
         """
-        # Step 1: create Qiskit level-3 preset pass manager
-        pm3 = generate_preset_pass_manager(optimization_level=3, backend=self)
-
-        # Step 2: create pass managers for RY replacement and Delay expansion
-        pm_replace = PassManager([self.ReplaceRYPass()])
-        pm_delay = PassManager([self.DelayToIdentityPass(dt=DT)])
-
-        # Step 3: replacement → delay expansion → level-3 passes
-        def run_custom_pm(circuit_or_dag):
-            dag = circuit_or_dag
-            dag = pm_replace.run(dag)
-            dag = pm_delay.run(dag)
-            dag = pm3.run(dag)
-            return dag
-
-        return run_custom_pm(circuit)
+        return self.get_pass_manager(optimization_level=3).run(circuit)
