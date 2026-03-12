@@ -58,6 +58,8 @@ class ApiUtility:
         else:
             raise ValueError("This instruction is not supported: ", instruction.name)
 
+        
+
         return operation
 
     @staticmethod
@@ -190,6 +192,7 @@ class keys:
 
 instructions: dict[str, str] = {
     "i": "i",
+    "id": "i",
     "x": "x",
     "y": "y",
     "z": "z",
