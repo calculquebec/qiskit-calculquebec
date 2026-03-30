@@ -190,6 +190,7 @@ class keys:
 
 instructions: dict[str, str] = {
     "i": "i",
+    "id": "i",
     "x": "x",
     "y": "y",
     "z": "z",

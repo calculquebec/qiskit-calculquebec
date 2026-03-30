@@ -13,7 +13,7 @@ from qiskit.circuit.library import (
     SXdgGate,
     Measure,
 )
-from qiskit.circuit import Parameter
+from qiskit.circuit import Parameter, Delay
 from qiskit.transpiler.target import QubitProperties
 from qiskit.transpiler import InstructionProperties
 
@@ -22,6 +22,8 @@ from qiskit_calculquebec.custom_gates.ry_90_gate import RY90Gate
 from qiskit_calculquebec.custom_gates.ry_m90_gate import RYm90Gate
 
 from abc import ABC, abstractmethod
+
+DT = 32e-9
 
 
 class AnyonTarget(Target, ABC):
@@ -109,6 +111,7 @@ class AnyonTarget(Target, ABC):
               duration and error rates
         """
         super().__init__()
+        self.dt = DT
 
         self.qubits = self.qubits()
         self.coupling_map = self.coupling_map()
@@ -179,6 +182,12 @@ class AnyonTarget(Target, ABC):
                     for q in self.qubits
                 }
 
+            elif isinstance(gate, Delay):
+                gate_props = {
+                    (q,): InstructionProperties(duration=None, error=0)
+                    for q in self.qubits
+                }
+
             else:
 
                 gate_props = {
@@ -212,6 +221,7 @@ class AnyonTarget(Target, ABC):
             Measure(),
             RY90Gate(),
             RYm90Gate(),
+            Delay(phi),
         ]
 
         self.default_two_qubit_gates = [CZGate()]
