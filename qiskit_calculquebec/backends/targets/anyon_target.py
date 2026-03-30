@@ -25,15 +25,6 @@ from abc import ABC, abstractmethod
 
 
 DT = 32e-9
-"""System time resolution (in seconds) of input signals for Anyon devices.
-
-This constant defines the hardware clock cycle used to express gate and delay
-durations in units of ``dt``. It is passed to the Qiskit :class:`Target` so
-that the transpiler can convert between SI durations (seconds) and discrete
-timestep counts.
-
-Value: 32 ns — chosen to match the Anyon hardware clock.
-"""
 
 
 class AnyonTarget(Target, ABC):
@@ -213,11 +204,6 @@ class AnyonTarget(Target, ABC):
                 }
 
             elif isinstance(gate, Delay):
-                # Duration is parametric: the transpiler will substitute the
-                # actual number of dt timesteps at scheduling time. We
-                # register the gate with None duration so Qiskit knows the
-                # backend supports it but leaves duration resolution to the
-                # scheduler (ALAPScheduleAnalysis / ALAPSchedule).
                 gate_props = {
                     (q,): InstructionProperties(duration=None, error=0)
                     for q in self.qubits
@@ -259,7 +245,7 @@ class AnyonTarget(Target, ABC):
             Measure(),
             RY90Gate(),
             RYm90Gate(),
-            Delay(Parameter("τ")),
+            Delay(phi),
         ]
 
         self.default_two_qubit_gates = [CZGate()]

@@ -1,5 +1,4 @@
 import warnings
-import math
 import numpy as np
 from qiskit.circuit import Measure, Delay
 from qiskit.circuit.library import IGate
@@ -7,9 +6,8 @@ from qiskit import generate_preset_pass_manager
 from qiskit.providers import BackendV2 as Backend
 from qiskit.providers import Options
 from qiskit.transpiler.basepasses import TransformationPass
-from qiskit.transpiler import PassManager
+from qiskit.transpiler import PassManager, StagedPassManager
 from qiskit.transpiler.passes import RemoveBarriers
-from qiskit.dagcircuit import DAGOpNode
 
 from qiskit_calculquebec.API.adapter import ApiAdapter
 from qiskit_calculquebec.API.client import ApiClient
@@ -126,16 +124,10 @@ class MonarQBackend(Backend):
         if not isinstance(circuits, (list, tuple)):
             circuits = [circuits]
 
-        # Remove barriers to simplify transpilation/execution
         circuits = RemoveBarriers()(circuits)
 
-        # Validate measurement placement BEFORE Delay expansion,
-        # since IGate sequences are appended at the end of the DAG
-        # and would incorrectly trigger the "gate after measurement" check.
         self._validate_circuit(circuits)
 
-        # Expand any Delay gates into IGate sequences AFTER all optimization,
-        # so the IGate sequences are never eliminated by the optimizer.
         pm_delay = PassManager([self.DelayToIdentityPass(dt=DT)])
         circuits = [pm_delay.run(qc) for qc in circuits]
 
@@ -208,7 +200,6 @@ class MonarQBackend(Backend):
                 duration = node.op.duration
                 unit = node.op.unit
 
-                # --- resolve duration to an integer number of dt cycles ---
                 if unit == "dt":
                     n_cycles = int(duration)
                 else:
@@ -216,7 +207,7 @@ class MonarQBackend(Backend):
                     duration_s = duration * unit_to_seconds.get(unit, 1)
                     n_cycles_exact = duration_s / self.dt
                     n_cycles = round(n_cycles_exact)
-                    if not math.isclose(n_cycles_exact, n_cycles, rel_tol=1e-6):
+                    if not np.isclose(n_cycles_exact, n_cycles, rel_tol=1e-6):
                         warnings.warn(
                             f"Delay duration {duration} [{unit}] is not an exact "
                             f"multiple of dt={self.dt} s. "
@@ -228,20 +219,15 @@ class MonarQBackend(Backend):
                     dag.remove_op_node(node)
                     continue
 
-                # Build a mini DAG with n_cycles IGate in series on 1 qubit,
-                # then substitute the Delay node with it in-place.
-                # This preserves the topological order of the circuit.
                 mini_dag = DAGCircuit()
                 mini_dag.add_qubits(node.qargs)
                 for _ in range(n_cycles):
-                    mini_dag.apply_operation_back(
-                        IGate(), qargs=node.qargs, cargs=[]
-                    )
+                    mini_dag.apply_operation_back(IGate(), qargs=node.qargs, cargs=[])
                 dag.substitute_node_with_dag(node, mini_dag)
 
             return dag
 
-    def get_pass_manager(self, optimization_level: int = 3) -> "StagedPassManager":
+    def get_pass_manager(self, optimization_level: int = 3) -> StagedPassManager:
         """
         Return a fully configured pass manager for this backend.
 
@@ -280,9 +266,6 @@ class MonarQBackend(Backend):
         pm = generate_preset_pass_manager(
             optimization_level=optimization_level, backend=self
         )
-        # Append custom passes after the standard optimization stages so that
-        # the preset passes can still optimize freely, then we finalize with
-        # the hardware-specific rewrites.
         pm.post_translation = PassManager(
             [self.ReplaceRYPass(), self.DelayToIdentityPass(dt=DT)]
         )
