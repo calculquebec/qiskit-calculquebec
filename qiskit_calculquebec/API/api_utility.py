@@ -58,8 +58,6 @@ class ApiUtility:
         else:
             raise ValueError("This instruction is not supported: ", instruction.name)
 
-        
-
         return operation
 
     @staticmethod
