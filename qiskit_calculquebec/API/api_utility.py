@@ -1,25 +1,40 @@
 """
-Contains API utility functions and constants
+Utility functions and constants for the Thunderhead REST API.
+
+Provides circuit/instruction conversion, request header construction,
+and string constants used across the API layer.
 """
 
 from qiskit import QuantumCircuit
 from qiskit.circuit import Gate
-
-# from qiskit.circuit.measurement import Measure
 import numpy as np
 from base64 import b64encode
 
 
 class ApiUtility:
+    """Static helper methods for building Thunderhead API payloads."""
+
     @staticmethod
     def convert_instruction(instruction: Gate) -> dict:
-        """Converts a Qiskit Gate to a dictionary that can be read by the Thunderhead API.
+        """
+        Convert a Qiskit gate to a Thunderhead operation dictionary.
 
-        Args:
-            instruction (Gate): a Qiskit gate object.
+        Parameters
+        ----------
+        instruction : Gate
+            A Qiskit gate instance with ``qubits``, ``clbits``, and ``params``
+            attributes populated (as found in ``QuantumCircuit.data``).
 
-        Returns:
-            dict: a dictionary representation of the operation that can be read by the Thunderhead API.
+        Returns
+        -------
+        dict
+            Thunderhead operation dict with ``type``, ``qubits``, and
+            optionally ``bits`` or ``parameters`` fields.
+
+        Raises
+        ------
+        ValueError
+            If the instruction name is not in the supported gate set.
         """
         if instruction.name in instructions:
             if len(instruction.qubits) == 1:
@@ -37,7 +52,6 @@ class ApiUtility:
                 }
 
         elif instruction.name in instructions_with_params:
-
             value = (
                 instruction.params[0]
                 if isinstance(instruction.params[0], (int, float, np.ndarray))
@@ -48,6 +62,7 @@ class ApiUtility:
                 keys.QUBITS: [instruction.qubits[0]._index],
                 keys.PARAMETERS: {"lambda": value},
             }
+
         elif instruction.name == "measure":
             operation = {
                 keys.TYPE: "readout",
@@ -56,59 +71,74 @@ class ApiUtility:
             }
 
         else:
-            raise ValueError("This instruction is not supported: ", instruction.name)
+            raise ValueError(f"Unsupported instruction: {instruction.name!r}")
 
         return operation
 
     @staticmethod
-    def convert_circuit(circuit: QuantumCircuit) -> dict[str, any]:
-        """Converts a QuantumCircuit to a dictionary that can be read by the Thunderhead API.
-
-        Args:
-            circuit (QuantumCircuit): A Qiskit quantum circuit (with information about the number of wires,
-                                    operations, and measurements).
-
-        Returns:
-            dict[str, any]: A dictionary representation of the circuit that can be read by the API.
+    def convert_circuit(circuit: QuantumCircuit) -> dict:
         """
+        Convert a ``QuantumCircuit`` to the Thunderhead circuit dictionary format.
 
-        # Initialize the dictionary with fixed bit and qubit counts (adjustable as needed)
-        circuit_dict = {
+        Parameters
+        ----------
+        circuit : QuantumCircuit
+            Circuit to convert. All instructions must be in the supported gate set.
+
+        Returns
+        -------
+        dict
+            Thunderhead circuit dict with ``type``, ``bitCount``,
+            ``qubitCount``, and ``operations`` fields.
+        """
+        return {
             keys.TYPE: keys.CIRCUIT,
-            keys.BIT_COUNT: 24,  # Adjust as needed for dynamic sizing
+            keys.BIT_COUNT: 24,
             keys.OPERATIONS: [
-                ApiUtility.convert_instruction(operation) for operation in circuit.data
+                ApiUtility.convert_instruction(op) for op in circuit.data
             ],
-            keys.QUBIT_COUNT: len(circuit.qubits),  # Number of qubits in the circuit
+            keys.QUBIT_COUNT: len(circuit.qubits),
         }
-
-        return circuit_dict
 
     @staticmethod
     def basic_auth(username: str, password: str) -> str:
-        """create a basic authentication token from a Thunderhead username and access token
+        """
+        Build a Basic Authentication header value.
 
-        Args:
-            username (str): your Thunderhead username
-            password (str): your Thunderhead access token
+        Parameters
+        ----------
+        username : str
+            Thunderhead username.
+        password : str
+            Thunderhead access token.
 
-        Returns:
-            str: the basic authentification string that will authenticate you with the API
+        Returns
+        -------
+        str
+            ``"Basic <base64-encoded credentials>"`` header value.
         """
         token = b64encode(f"{username}:{password}".encode("ascii")).decode("ascii")
         return f"Basic {token}"
 
     @staticmethod
     def headers(username: str, password: str, realm: str) -> dict[str, str]:
-        """the Thunderhead API headers
+        """
+        Build the HTTP request headers required by the Thunderhead API.
 
-        Args:
-            username (str): your Thunderhead username
-            password (str): your Thunderhead access token
-            realm (str): your organization identifier with Thunderhead
+        Parameters
+        ----------
+        username : str
+            Thunderhead username.
+        password : str
+            Thunderhead access token.
+        realm : str
+            Organizational realm identifier.
 
-        Returns:
-            dict[str, any]: a dictionary representing the request headers
+        Returns
+        -------
+        dict[str, str]
+            Headers dict containing ``Authorization``, ``Content-Type``,
+            and ``X-Realm``.
         """
         return {
             "Authorization": ApiUtility.basic_auth(username, password),
@@ -118,35 +148,45 @@ class ApiUtility:
 
     @staticmethod
     def job_body(
-        circuit: dict[str, any],
+        circuit: dict,
         circuit_name: str,
         project_id: str,
         machine_name: str,
-        shots,
-    ) -> dict[str, any]:
-        """the body for the job creation request
-
-        Args:
-            circuit (tape.QuantumScript): the script you want to convert
-            name (str): the name of your job
-            project_id (str): the id for the project for which this job will be run
-            machine_name (str): the name of the machine on which this job will be run
-            shots (int, optional): the number of shots (-1 will use the circuit's shot number)
-
-        Returns:
-            dict[str, any]: the body for the job creation request
+        shots: int,
+    ) -> dict:
         """
-        body = {
+        Build the request body for the ``POST /jobs`` endpoint.
+
+        Parameters
+        ----------
+        circuit : dict
+            Circuit in Thunderhead dictionary format.
+        circuit_name : str
+            Human-readable label for the circuit.
+        project_id : str
+            ID of the project under which the job will be billed.
+        machine_name : str
+            Target machine name (e.g. ``"yukon"``).
+        shots : int
+            Number of shots to execute.
+
+        Returns
+        -------
+        dict
+            JSON-serializable body for the job creation request.
+        """
+        return {
             keys.NAME: circuit_name,
             keys.PROJECT_ID: project_id,
             keys.MACHINE_NAME: machine_name,
             keys.SHOT_COUNT: shots,
             keys.CIRCUIT: circuit,
         }
-        return body
 
 
 class routes:
+    """URL path segments for Thunderhead API endpoints."""
+
     JOBS = "/jobs"
     PROJECTS = "/projects"
     MACHINES = "/machines"
@@ -154,11 +194,15 @@ class routes:
 
 
 class queries:
+    """Query parameter prefixes used in Thunderhead API requests."""
+
     MACHINE_NAME = "?machineName"
     NAME = "?name"
 
 
 class keys:
+    """JSON field name constants used in Thunderhead request/response payloads."""
+
     NAME = "name"
     STATUS = "status"
     ONLINE = "online"
@@ -168,11 +212,9 @@ class keys:
     QUBIT_COUNT = "qubitCount"
     OPERATIONS = "operations"
     CIRCUIT = "circuit"
-    NAME = "name"
     MACHINE_NAME = "machineName"
     PROJECT_ID = "projectID"
     SHOT_COUNT = "shotCount"
-    TYPE = "type"
     BITS = "bits"
     QUBITS = "qubits"
     PARAMETERS = "parameters"
@@ -188,6 +230,7 @@ class keys:
     ID = "id"
 
 
+# Gate names that map directly to Thunderhead instruction types (no parameters)
 instructions: dict[str, str] = {
     "i": "i",
     "id": "i",
@@ -203,4 +246,5 @@ instructions: dict[str, str] = {
     "cz": "cz",
 }
 
+# Gate names that require a rotation angle parameter
 instructions_with_params: dict[str, str] = {"rz": "rz", "p": "p"}

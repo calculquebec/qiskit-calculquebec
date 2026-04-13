@@ -64,6 +64,22 @@ class MonarQBackend(Backend):
         return Options(shots=1024)
 
     def __init__(self, machine_name: str = "monarq", client: ApiClient = None):
+        """
+        Initialize the MonarQ backend.
+
+        Parameters
+        ----------
+        machine_name : str
+            Target device: ``"monarq"`` (24 qubits) or ``"yukon"`` (6 qubits).
+            Default: ``"monarq"``.
+        client : ApiClient
+            Authenticated API client. Required.
+
+        Raises
+        ------
+        ValueError
+            If ``client`` is ``None`` or ``machine_name`` is not supported.
+        """
         super().__init__()
         if client is None:
             raise ValueError("An ApiClient instance must be provided.")
@@ -88,6 +104,24 @@ class MonarQBackend(Backend):
         self.options.set_validator("shots", (1, 1024))
 
     def _validate_circuit(self, circuits):
+        """
+        Validate that each circuit satisfies hardware constraints.
+
+        Rules:
+        - Every circuit must contain at least one measurement.
+        - Multi-qubit measurements are not supported.
+        - Gates cannot be applied to a qubit after it has been measured.
+
+        Parameters
+        ----------
+        circuits : list[QuantumCircuit]
+            Circuits to validate.
+
+        Raises
+        ------
+        ValueError
+            If any constraint is violated.
+        """
         for qc in circuits:
             measured_qubits = set()
             for instr in qc.data:
@@ -145,10 +179,24 @@ class MonarQBackend(Backend):
 
     class ReplaceRYPass(TransformationPass):
         """
-        Transpiler pass to replace RY(±π/2) with custom RY90/RYm90 gates.
+        Transpiler pass that replaces ``RY(±π/2)`` with the native
+        ``RY90Gate`` / ``RYm90Gate`` custom gates.
         """
 
         def run(self, dag):
+            """
+            Apply the substitution to all matching nodes in the DAG.
+
+            Parameters
+            ----------
+            dag : DAGCircuit
+                Input circuit DAG.
+
+            Returns
+            -------
+            DAGCircuit
+                Modified DAG with ``RY90Gate`` / ``RYm90Gate`` substitutions.
+            """
             for node in dag.op_nodes():
                 if node.name == "ry" and np.isclose(node.op.params[0], np.pi / 2):
                     dag.substitute_node(node, RY90Gate())
@@ -191,6 +239,19 @@ class MonarQBackend(Backend):
             self.dt = dt
 
         def run(self, dag):
+            """
+            Expand all ``Delay`` nodes in the DAG into ``IGate`` sequences.
+
+            Parameters
+            ----------
+            dag : DAGCircuit
+                Input circuit DAG.
+
+            Returns
+            -------
+            DAGCircuit
+                Modified DAG with ``Delay`` nodes replaced by ``IGate`` chains.
+            """
             from qiskit.dagcircuit import DAGCircuit
 
             for node in dag.op_nodes():
@@ -273,9 +334,21 @@ class MonarQBackend(Backend):
 
     def transpile(self, circuit):
         """
-        Transpile a circuit with:
-        1. Replacement of RY(±π/2) gates
-        2. Expansion of Delay gates into sequences of IGate
-        3. Level-3 preset optimization passes
+        Transpile a circuit for this backend at optimization level 3.
+
+        Applies:
+        - ``ReplaceRYPass``: rewrites ``RY(±π/2)`` to native ``RY90`` / ``RYm90`` gates.
+        - ``DelayToIdentityPass``: expands ``Delay`` gates into ``IGate`` sequences.
+        - Level-3 preset optimization passes.
+
+        Parameters
+        ----------
+        circuit : QuantumCircuit
+            Circuit to transpile.
+
+        Returns
+        -------
+        QuantumCircuit
+            Transpiled circuit ready for execution.
         """
         return self.get_pass_manager(optimization_level=3).run(circuit)

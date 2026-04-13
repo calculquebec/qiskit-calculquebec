@@ -1,3 +1,11 @@
+"""
+Abstract hardware target for Anyon quantum devices (MonarQ, Yukon).
+
+Provides the base ``AnyonTarget`` class that loads calibration data,
+defines the supported gate set, and registers instruction properties.
+Concrete targets (``MonarQ``, ``Yukon``) supply the topology.
+"""
+
 from qiskit.transpiler.target import Target
 from qiskit.circuit.library import (
     IGate,
@@ -23,6 +31,7 @@ from qiskit_calculquebec.custom_gates.ry_m90_gate import RYm90Gate
 
 from abc import ABC, abstractmethod
 
+#: Hardware clock period in seconds (32 ns per cycle on Anyon devices).
 DT = 32e-9
 
 

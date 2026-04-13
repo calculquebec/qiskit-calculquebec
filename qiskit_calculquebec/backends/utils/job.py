@@ -1,3 +1,11 @@
+"""
+Qiskit job wrappers for the MonarQ/Yukon backend.
+
+``MonarQJob`` manages a single-circuit job. ``MultiMonarQJob`` sequences
+multiple single-circuit jobs and aggregates their results into one
+Qiskit ``Result`` object.
+"""
+
 import time
 from qiskit.providers import JobV1 as Job
 from qiskit.providers import JobError, JobTimeoutError
@@ -9,12 +17,23 @@ from qiskit_calculquebec.API.adapter import ApiAdapter
 
 class MonarQJob(Job):
     """
-    A wrapper for submitting and managing a single circuit to a Yukon/MonarQ backend.
+    Qiskit job wrapper for a single circuit submitted to MonarQ/Yukon.
 
-    Handles:
-    - Circuit submission
-    - Polling for job completion
-    - Conversion of API results to Qiskit's Result object
+    If no ``job_id`` is provided, the circuit is submitted to the API
+    immediately on construction.
+
+    Parameters
+    ----------
+    backend : MonarQBackend
+        The backend this job was submitted to.
+    job_id : str | None
+        Existing job ID to track. If ``None``, the circuit is submitted
+        immediately and the returned ID is stored.
+    circuits : list[QuantumCircuit] | None
+        List containing exactly one circuit. Required when ``job_id`` is
+        ``None``.
+    shots : int
+        Number of shots. Default: 1000.
     """
 
     def __init__(self, backend, job_id=None, circuits=None, shots=1000):
@@ -23,38 +42,59 @@ class MonarQJob(Job):
         self.circuits = circuits or []
         self.shots = shots
 
-        # If no job ID is provided, submit immediately
         if job_id is None:
             self._job_id = self._submit_circuit()
         else:
             self._job_id = job_id
 
-    def _submit_circuit(self):
-        """Submit a single circuit to the API and return the job ID."""
+    def _submit_circuit(self) -> str:
+        """
+        Submit the single circuit to the API and return the job ID.
+
+        Returns
+        -------
+        str
+            Job ID assigned by the scheduler.
+
+        Raises
+        ------
+        ValueError
+            If ``circuits`` does not contain exactly one circuit.
+        """
         if not self.circuits or len(self.circuits) != 1:
-            raise ValueError("MonarQJob can only submit one circuit at a time")
+            raise ValueError("MonarQJob can only submit one circuit at a time.")
 
-        circuit = self.circuits[0]
-        result = CQJob(circuit, self.shots).run_getID()
-        return result
+        return CQJob(self.circuits[0], self.shots).run_getID()
 
-    def _wait_for_result(self, timeout=None, wait=5):
+    def _wait_for_result(self, timeout=None, wait=5) -> dict:
         """
         Poll the API until the job completes or fails.
 
-        Args:
-            timeout: Maximum time (seconds) to wait
-            wait: Delay (seconds) between polling
+        Parameters
+        ----------
+        timeout : float | None
+            Maximum number of seconds to wait. ``None`` means no timeout.
+        wait : float
+            Seconds to sleep between polling attempts. Default: 5.
 
-        Returns:
-            dict: API response JSON for the completed job
+        Returns
+        -------
+        dict
+            Full API response JSON for the completed job.
+
+        Raises
+        ------
+        JobTimeoutError
+            If ``timeout`` is exceeded before the job completes.
+        JobError
+            If the job status is ``"FAILED"``.
         """
         start_time = time.time()
 
         while True:
             elapsed = time.time() - start_time
             if timeout and elapsed >= timeout:
-                raise JobTimeoutError("Timed out waiting for result")
+                raise JobTimeoutError("Timed out waiting for result.")
 
             response = ApiAdapter.job_by_id(self._job_id)
             result = response.json()
@@ -63,30 +103,41 @@ class MonarQJob(Job):
             if status == "SUCCEEDED":
                 break
             elif status == "FAILED":
-                raise JobError("Job execution failed")
+                raise JobError("Job execution failed.")
 
             time.sleep(wait)
 
         return result
 
-    def result(self, timeout=None, wait=5):
+    def result(self, timeout=None, wait=5) -> Result:
         """
-        Return a Qiskit Result object from the completed job.
-        Converts API histogram into counts and memory format.
+        Block until the job completes and return a Qiskit ``Result``.
+
+        The API histogram (bitstring → count) is converted to both ``counts``
+        and ``memory`` (hex strings repeated according to counts) for full
+        Qiskit compatibility.
+
+        Parameters
+        ----------
+        timeout : float | None
+            Maximum seconds to wait. ``None`` means no timeout.
+        wait : float
+            Seconds between polling attempts. Default: 5.
+
+        Returns
+        -------
+        Result
+            Qiskit result containing ``counts`` and ``memory``.
         """
         job_info = self._wait_for_result(timeout, wait)
         histogram = job_info["result"]["histogram"]
 
-        # Build memory as hex strings repeated according to counts
         memory = []
         for bitstring, count in histogram.items():
-            val = int(bitstring, 2)  # binary -> int
-            hex_str = format(
-                val, f"0{((len(bitstring)+3)//4)}x"
-            )  # int -> hex with proper padding
+            val = int(bitstring, 2)
+            hex_str = format(val, f"0{((len(bitstring) + 3) // 4)}x")
             memory.extend([hex_str] * count)
 
-        # Qiskit expects both counts and memory
         qiskit_results = [
             {
                 "success": True,
@@ -105,8 +156,16 @@ class MonarQJob(Job):
             }
         )
 
-    def status(self):
-        """Map the backend job status to Qiskit JobStatus."""
+    def status(self) -> JobStatus:
+        """
+        Return the current Qiskit ``JobStatus`` for this job.
+
+        Returns
+        -------
+        JobStatus
+            One of ``RUNNING``, ``DONE``, ``QUEUED``, ``CANCELLED``,
+            or ``ERROR``.
+        """
         response = ApiAdapter.job_by_id(self._job_id)
         status_str = response.json()["job"]["status"]["type"]
 
@@ -116,20 +175,31 @@ class MonarQJob(Job):
             "QUEUED": JobStatus.QUEUED,
             "CANCELLED": JobStatus.CANCELLED,
         }
-
         return mapping.get(status_str, JobStatus.ERROR)
 
-    def submit(self):
-        """Convenience method to trigger result retrieval."""
+    def submit(self) -> Result:
+        """Alias for :meth:`result`. Triggers result retrieval."""
         return self.result()
 
 
 class MultiMonarQJob(Job):
     """
-    Wrapper to handle multiple circuits sequentially on a backend
-    that only supports one circuit per job.
+    Qiskit job wrapper that sequences multiple circuits on a single-job backend.
 
-    This class manages multiple MonarQJob instances internally.
+    MonarQ/Yukon only supports one circuit per API job. This class submits
+    each circuit as a separate ``MonarQJob`` and aggregates the results into
+    a single Qiskit ``Result`` object.
+
+    Parameters
+    ----------
+    backend : MonarQBackend
+        The backend this job was submitted to.
+    circuits : list[QuantumCircuit]
+        Circuits to execute sequentially.
+    job_id : str | None
+        Optional composite job ID. Default: ``"multi_job"``.
+    shots : int | None
+        Shots per circuit. Falls back to ``backend.options.shots`` if ``None``.
     """
 
     def __init__(self, backend, circuits, job_id=None, shots=None):
@@ -138,21 +208,45 @@ class MultiMonarQJob(Job):
         self.circuits = circuits
         self.shots = shots or getattr(backend.options, "shots", 1000)
 
-        # Create individual MonarQJobs for each circuit
         self._individual_jobs = [
             MonarQJob(backend, circuits=[c], shots=self.shots) for c in circuits
         ]
 
-    def _wait_for_result(self, timeout=None, wait=5):
-        """Wait for all individual jobs to complete."""
+    def _wait_for_result(self, timeout=None, wait=5) -> bool:
+        """
+        Wait for all individual jobs to complete.
+
+        Parameters
+        ----------
+        timeout : float | None
+            Maximum seconds to wait per job. ``None`` means no timeout.
+        wait : float
+            Seconds between polling attempts. Default: 5.
+
+        Returns
+        -------
+        bool
+            Always ``True`` when all jobs have completed successfully.
+        """
         for job in self._individual_jobs:
             job._wait_for_result(timeout=timeout, wait=wait)
         return True
 
-    def result(self, timeout=None, wait=5):
+    def result(self, timeout=None, wait=5) -> Result:
         """
-        Combine results from all individual MonarQJobs into a single Qiskit Result.
-        Ensures compatibility with Estimator by setting 'evs' if missing.
+        Collect results from all individual jobs and combine them.
+
+        Parameters
+        ----------
+        timeout : float | None
+            Maximum seconds to wait per job. ``None`` means no timeout.
+        wait : float
+            Seconds between polling attempts. Default: 5.
+
+        Returns
+        -------
+        Result
+            Combined Qiskit ``Result`` containing one entry per circuit.
         """
         all_results = []
 
@@ -161,12 +255,10 @@ class MultiMonarQJob(Job):
 
             for exp in res.results:
                 data = exp.data
-
-                # Ensure compatibility: add 'evs' if missing
+                # Ensure Estimator compatibility: add 'evs' if missing
                 if not hasattr(data, "evs") and not hasattr(data, "counts"):
                     ev = getattr(data, "expectation_value", None)
                     setattr(data, "evs", ev if ev is not None else [])
-
                 all_results.append(exp)
 
         return Result.from_dict(
@@ -179,8 +271,18 @@ class MultiMonarQJob(Job):
             }
         )
 
-    def status(self):
-        """Aggregate status from all individual jobs."""
+    def status(self) -> JobStatus:
+        """
+        Return the aggregate ``JobStatus`` across all individual jobs.
+
+        Returns ``DONE`` only when all jobs have succeeded; returns ``RUNNING``
+        if any job is still running; returns ``ERROR`` if any job has failed.
+
+        Returns
+        -------
+        JobStatus
+            Aggregated status.
+        """
         statuses = [job.status() for job in self._individual_jobs]
 
         if all(s == JobStatus.DONE for s in statuses):
@@ -194,6 +296,6 @@ class MultiMonarQJob(Job):
         else:
             return JobStatus.INITIALIZING
 
-    def submit(self):
-        """Convenience method to trigger combined result retrieval."""
+    def submit(self) -> Result:
+        """Alias for :meth:`result`. Triggers combined result retrieval."""
         return self.result()
