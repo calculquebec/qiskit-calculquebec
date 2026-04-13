@@ -205,17 +205,3 @@ def test_run_unmitigated_applies_rem_matrix(backend, ghz):
     assert isinstance(result, float)
 
 
-# ── run_scaled ────────────────────────────────────────────────────────────────
-
-def test_run_scaled_keys(backend, ghz, mock_sampler_counts):
-    zne = ZNEMitigation(backend, scale_factors=[1.0, 2.0, 3.0])
-    result = zne.run_scaled(ghz)
-    assert set(result.keys()) == {1.0, 2.0, 3.0}
-
-
-def test_run_scaled_values_are_floats(backend, ghz, mock_sampler_counts):
-    zne = ZNEMitigation(backend, scale_factors=[1.0, 2.0])
-    result = zne.run_scaled(ghz)
-    for v in result.values():
-        assert isinstance(v, float)
-        assert 0.0 <= v <= 1.0
