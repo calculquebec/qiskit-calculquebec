@@ -14,15 +14,11 @@ from qiskit_calculquebec.API.retry_decorator import retry
 
 
 class ApiException(Exception):
-    """
-    Raised when an API call returns a non-200 HTTP status code.
+    """Raised when an API call returns a non-200 HTTP status code.
 
-    Parameters
-    ----------
-    code : int
-        HTTP status code returned by the server.
-    message : str
-        Human-readable error description.
+    Args:
+        code (int): HTTP status code returned by the server.
+        message (str): Human-readable error description.
     """
 
     def __init__(self, code: int, message: str):
@@ -31,13 +27,10 @@ class ApiException(Exception):
 
 
 class ProjectException(Exception):
-    """
-    Base exception for project-related errors.
+    """Base exception for project-related errors.
 
-    Parameters
-    ----------
-    message : str
-        Human-readable error description.
+    Args:
+        message (str): Human-readable error description.
     """
 
     def __init__(self, message: str):
@@ -46,16 +39,13 @@ class ProjectException(Exception):
 
 
 class MultipleProjectsException(ProjectException):
-    """
-    Raised when multiple projects share the same name.
+    """Raised when multiple projects share the same name.
 
     Use the project ID instead of the name when this occurs.
 
-    Parameters
-    ----------
-    projects : list
-        List of project dicts (each containing ``name`` and ``id``) that
-        matched the requested name.
+    Args:
+        projects (list): List of project dicts (each containing ``name`` and
+            ``id``) that matched the requested name.
     """
 
     def __init__(self, projects: list):
@@ -70,13 +60,10 @@ class MultipleProjectsException(ProjectException):
 
 
 class NoProjectFoundException(ProjectException):
-    """
-    Raised when no project matches the requested name.
+    """Raised when no project matches the requested name.
 
-    Parameters
-    ----------
-    project_name : str
-        The name that was searched for.
+    Args:
+        project_name (str): The name that was searched for.
     """
 
     def __init__(self, project_name: str):
@@ -84,8 +71,7 @@ class NoProjectFoundException(ProjectException):
 
 
 class ApiAdapter(object):
-    """
-    Singleton wrapper around the Thunderhead REST API.
+    """Singleton wrapper around the Thunderhead REST API.
 
     Initialize with ``ApiAdapter.initialize(client)``, then access the
     instance with ``ApiAdapter.instance()``. Machine, benchmark, and
@@ -122,28 +108,23 @@ class ApiAdapter(object):
 
     @classmethod
     def instance(cls) -> "ApiAdapter":
-        """
-        Return the singleton ``ApiAdapter`` instance.
+        """Return the singleton ``ApiAdapter`` instance.
 
-        Returns
-        -------
-        ApiAdapter
-            The initialized singleton, or ``None`` if not yet initialized.
+        Returns:
+            ApiAdapter: The initialized singleton, or ``None`` if not yet initialized.
         """
         return cls._instance
 
     @classmethod
     def initialize(cls, client: ApiClient):
-        """
-        Create and configure the singleton ``ApiAdapter`` instance.
+        """Create and configure the singleton ``ApiAdapter`` instance.
 
         If ``client.project_name`` is set, the corresponding project ID is
         resolved automatically via the API.
 
-        Parameters
-        ----------
-        client : ApiClient
-            Authenticated client containing host, credentials, and project info.
+        Args:
+            client (ApiClient): Authenticated client containing host, credentials,
+                and project info.
         """
         cls._instance = cls.__new__(cls)
         cls._instance.headers = ApiUtility.headers(
@@ -162,40 +143,28 @@ class ApiAdapter(object):
 
     @staticmethod
     def is_last_update_expired() -> bool:
-        """
-        Return whether the cached data is older than 24 hours.
+        """Return whether the cached data is older than 24 hours.
 
-        Returns
-        -------
-        bool
-            ``True`` if the cache is stale and should be refreshed.
+        Returns:
+            bool: ``True`` if the cache is stale and should be refreshed.
         """
         return datetime.now() - ApiAdapter._last_update > timedelta(hours=24)
 
     @staticmethod
     @retry(3)
     def get_project_id_by_name(project_name: str = "default") -> str:
-        """
-        Resolve a project name to its unique ID.
+        """Resolve a project name to its unique ID.
 
-        Parameters
-        ----------
-        project_name : str
-            Name of the project to look up. Default: ``"default"``.
+        Args:
+            project_name (str): Name of the project to look up. Default: ``"default"``.
 
-        Returns
-        -------
-        str
-            The project ID.
+        Returns:
+            str: The project ID.
 
-        Raises
-        ------
-        MultipleProjectsException
-            If more than one project shares the given name.
-        NoProjectFoundException
-            If no project matches the given name.
-        ApiException
-            If the HTTP request fails.
+        Raises:
+            MultipleProjectsException: If more than one project shares the given name.
+            NoProjectFoundException: If no project matches the given name.
+            ApiException: If the HTTP request fails.
         """
         res = requests.get(
             ApiAdapter.instance().client.host
@@ -225,23 +194,16 @@ class ApiAdapter(object):
     @staticmethod
     @retry(3)
     def get_machine_by_name(machine_name: str) -> dict:
-        """
-        Fetch machine metadata by name, caching the result.
+        """Fetch machine metadata by name, caching the result.
 
-        Parameters
-        ----------
-        machine_name : str
-            Name of the machine to retrieve.
+        Args:
+            machine_name (str): Name of the machine to retrieve.
 
-        Returns
-        -------
-        dict
-            Machine metadata as returned by the API.
+        Returns:
+            dict: Machine metadata as returned by the API.
 
-        Raises
-        ------
-        ApiException
-            If the HTTP request fails.
+        Raises:
+            ApiException: If the HTTP request fails.
         """
         if ApiAdapter._machine is None:
             route = (
@@ -261,19 +223,15 @@ class ApiAdapter(object):
     @staticmethod
     @retry(3)
     def get_qubits_and_couplers(machine_name: str) -> dict:
-        """
-        Return qubit and coupler fidelity data from the latest benchmark.
+        """Return qubit and coupler fidelity data from the latest benchmark.
 
-        Parameters
-        ----------
-        machine_name : str
-            Name of the machine.
+        Args:
+            machine_name (str): Name of the machine.
 
-        Returns
-        -------
-        dict
-            ``resultsPerDevice`` section of the benchmark, containing T1, T2,
-            single-qubit gate fidelities, CZ fidelities, and readout fidelities.
+        Returns:
+            dict: ``resultsPerDevice`` section of the benchmark, containing T1,
+                T2, single-qubit gate fidelities, CZ fidelities, and readout
+                fidelities.
         """
         benchmark = ApiAdapter.get_benchmark(machine_name)
         return benchmark[keys.RESULTS_PER_DEVICE]
@@ -281,23 +239,16 @@ class ApiAdapter(object):
     @staticmethod
     @retry(3)
     def get_benchmark(machine_name: str) -> dict:
-        """
-        Fetch the latest benchmark for a machine, caching the result for 24 hours.
+        """Fetch the latest benchmark for a machine, caching the result for 24 hours.
 
-        Parameters
-        ----------
-        machine_name : str
-            Name of the machine.
+        Args:
+            machine_name (str): Name of the machine.
 
-        Returns
-        -------
-        dict
-            Full benchmark response from the API.
+        Returns:
+            dict: Full benchmark response from the API.
 
-        Raises
-        ------
-        ApiException
-            If the HTTP request fails.
+        Raises:
+            ApiException: If the HTTP request fails.
         """
         if ApiAdapter._benchmark is None or ApiAdapter.is_last_update_expired():
             machine = ApiAdapter.get_machine_by_name(machine_name)
@@ -321,25 +272,17 @@ class ApiAdapter(object):
     @staticmethod
     @retry(3)
     def post_job(circuit: dict, shot_count: int = 1) -> requests.Response:
-        """
-        Submit a new job to the scheduler.
+        """Submit a new job to the scheduler.
 
-        Parameters
-        ----------
-        circuit : dict
-            Circuit in Thunderhead dictionary format.
-        shot_count : int
-            Number of shots to execute. Default: 1.
+        Args:
+            circuit (dict): Circuit in Thunderhead dictionary format.
+            shot_count (int): Number of shots to execute. Default: 1.
 
-        Returns
-        -------
-        requests.Response
-            HTTP response from the ``POST /jobs`` endpoint.
+        Returns:
+            requests.Response: HTTP response from the ``POST /jobs`` endpoint.
 
-        Raises
-        ------
-        ApiException
-            If the HTTP request fails.
+        Raises:
+            ApiException: If the HTTP request fails.
         """
         project_id = ApiAdapter.instance().client.project_id
         circuit_name = ApiAdapter.instance().client.circuit_name
@@ -359,18 +302,13 @@ class ApiAdapter(object):
     @staticmethod
     @retry(3)
     def list_jobs() -> requests.Response:
-        """
-        Retrieve all jobs for the authenticated user.
+        """Retrieve all jobs for the authenticated user.
 
-        Returns
-        -------
-        requests.Response
-            HTTP response from the ``GET /jobs`` endpoint.
+        Returns:
+            requests.Response: HTTP response from the ``GET /jobs`` endpoint.
 
-        Raises
-        ------
-        ApiException
-            If the HTTP request fails.
+        Raises:
+            ApiException: If the HTTP request fails.
         """
         res = requests.get(
             ApiAdapter.instance().client.host + routes.JOBS,
@@ -383,23 +321,16 @@ class ApiAdapter(object):
     @staticmethod
     @retry(3)
     def job_by_id(id: str) -> requests.Response:
-        """
-        Retrieve a specific job by its ID.
+        """Retrieve a specific job by its ID.
 
-        Parameters
-        ----------
-        id : str
-            Job ID to retrieve.
+        Args:
+            id (str): Job ID to retrieve.
 
-        Returns
-        -------
-        requests.Response
-            HTTP response from the ``GET /jobs/{id}`` endpoint.
+        Returns:
+            requests.Response: HTTP response from the ``GET /jobs/{id}`` endpoint.
 
-        Raises
-        ------
-        ApiException
-            If the HTTP request fails.
+        Raises:
+            ApiException: If the HTTP request fails.
         """
         res = requests.get(
             ApiAdapter.instance().client.host + routes.JOBS + f"/{id}",
@@ -412,24 +343,17 @@ class ApiAdapter(object):
     @staticmethod
     @retry(3)
     def list_machines(online_only: bool = False) -> list[dict]:
-        """
-        Return the list of available machines.
+        """Return the list of available machines.
 
-        Parameters
-        ----------
-        online_only : bool
-            If ``True``, return only machines with status ``"online"``.
-            Default: ``False``.
+        Args:
+            online_only (bool): If ``True``, return only machines with status
+                ``"online"``. Default: ``False``.
 
-        Returns
-        -------
-        list[dict]
-            List of machine metadata dicts.
+        Returns:
+            list[dict]: List of machine metadata dicts.
 
-        Raises
-        ------
-        ApiException
-            If the HTTP request fails.
+        Raises:
+            ApiException: If the HTTP request fails.
         """
         res = requests.get(
             ApiAdapter.instance().client.host + routes.MACHINES,
@@ -444,23 +368,16 @@ class ApiAdapter(object):
         ]
 
     def get_connectivity_for_machine(machine_name: str) -> dict:
-        """
-        Return the coupler-to-qubit connectivity map for a machine.
+        """Return the coupler-to-qubit connectivity map for a machine.
 
-        Parameters
-        ----------
-        machine_name : str
-            Name of the machine.
+        Args:
+            machine_name (str): Name of the machine.
 
-        Returns
-        -------
-        dict
-            Coupler-to-qubit mapping describing hardware connectivity.
+        Returns:
+            dict: Coupler-to-qubit mapping describing hardware connectivity.
 
-        Raises
-        ------
-        ApiException
-            If no machine with the given name is found.
+        Raises:
+            ApiException: If no machine with the given name is found.
         """
         machines = ApiAdapter.list_machines()
         target = [m for m in machines if m[keys.NAME] == machine_name]
@@ -471,20 +388,15 @@ class ApiAdapter(object):
 
     @staticmethod
     def raise_exception(res):
-        """
-        Parse an HTTP response and raise an ``ApiException``.
+        """Parse an HTTP response and raise an ``ApiException``.
 
         Attempts to extract a human-readable error message from the JSON body.
 
-        Parameters
-        ----------
-        res : requests.Response
-            The failed HTTP response.
+        Args:
+            res (requests.Response): The failed HTTP response.
 
-        Raises
-        ------
-        ApiException
-            Always raised with the status code and parsed message.
+        Raises:
+            ApiException: Always raised with the status code and parsed message.
         """
         message = res
 

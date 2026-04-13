@@ -29,68 +29,62 @@ def _require_mitiq_zne():
 
 
 class ZNEMitigation:
-    """
-    Zero-Noise Extrapolation (ZNE) for MonarQ.
+    """Zero-Noise Extrapolation (ZNE) for MonarQ.
 
     Runs the circuit at several noise scale factors, then extrapolates
     to the zero-noise limit using the chosen inference factory.
 
-    Parameters
-    ----------
-    backend : MonarQBackend
-        Calcul Québec backend.
-    scale_factors : list[float]
-        Noise scale factors. Default: ``[1.0, 1.5, 2.0, 2.5, 3.0]``.
-    factory : mitiq.zne.inference.Factory | None
-        Extrapolation method. ``None`` → ``LinearFactory(scale_factors)``.
-        Richardson is theoretically more accurate but tends to diverge
-        with 4+ scale factors. Examples: ``LinearFactory([1,2,3])``,
-        ``RichardsonFactory([1,2,3])``, ``ExpFactory([1,2,3], asymptote=0.5)``.
-    scale_noise : callable | None
-        Noise scaling method. ``None`` → ``fold_gates_at_random`` (mitiq default).
-        Alternative: ``fold_global``.
-    shots : int
-        Shots per circuit. Default: 1024.
+    Args:
+        backend (MonarQBackend): Calcul Québec backend.
+        scale_factors (list[float] | None): Noise scale factors.
+            Default: ``[1.0, 1.5, 2.0, 2.5, 3.0]``.
+        factory (mitiq.zne.inference.Factory | None): Extrapolation method.
+            ``None`` → ``LinearFactory(scale_factors)``. Richardson is
+            theoretically more accurate but tends to diverge with 4+ scale
+            factors. Examples: ``LinearFactory([1,2,3])``,
+            ``RichardsonFactory([1,2,3])``,
+            ``ExpFactory([1,2,3], asymptote=0.5)``.
+        scale_noise (callable | None): Noise scaling method.
+            ``None`` → ``fold_gates_at_random`` (mitiq default).
+            Alternative: ``fold_global``.
+        shots (int): Shots per circuit. Default: 1024.
 
-    Examples
-    --------
-    Default observable — P(|0…0⟩):
+    Examples:
+        Default observable — P(|0…0⟩):
 
-    >>> zne_mit = ZNEMitigation(backend, scale_factors=[1.0, 2.0, 3.0])
-    >>> result = zne_mit.run(circuit)
-    >>> print(f"Raw: {zne_mit.run_unmitigated(circuit):.4f}  Mitigated: {result:.4f}")
+        >>> zne_mit = ZNEMitigation(backend, scale_factors=[1.0, 2.0, 3.0])
+        >>> result = zne_mit.run(circuit)
+        >>> print(f"Raw: {zne_mit.run_unmitigated(circuit):.4f}  Mitigated: {result:.4f}")
 
-    Arbitrary Pauli observable:
+        Arbitrary Pauli observable:
 
-    >>> from mitiq import Observable, PauliString
-    >>> obs = Observable(PauliString("ZZ", support=[0, 1]))  # <Z0 Z1>
-    >>> result = zne_mit.run(circuit, observable=obs)
+        >>> from mitiq import Observable, PauliString
+        >>> obs = Observable(PauliString("ZZ", support=[0, 1]))  # <Z0 Z1>
+        >>> result = zne_mit.run(circuit, observable=obs)
 
-    Custom factory:
+        Custom factory:
 
-    >>> from mitiq.zne.inference import LinearFactory
-    >>> from mitiq.zne.scaling import fold_global
-    >>> zne_mit = ZNEMitigation(
-    ...     backend,
-    ...     factory=LinearFactory([1.0, 1.5, 2.0, 2.5, 3.0]),
-    ...     scale_noise=fold_global,
-    ... )
-    >>> result = zne_mit.run(circuit)
+        >>> from mitiq.zne.inference import LinearFactory
+        >>> from mitiq.zne.scaling import fold_global
+        >>> zne_mit = ZNEMitigation(
+        ...     backend,
+        ...     factory=LinearFactory([1.0, 1.5, 2.0, 2.5, 3.0]),
+        ...     scale_noise=fold_global,
+        ... )
+        >>> result = zne_mit.run(circuit)
 
-    ZNE combined with REM:
+        ZNE combined with REM:
 
-    >>> rem = ReadoutMitigation(backend, method='m3')
-    >>> rem.cals_from_system()
-    >>> # qubits must be derived with optimization_level=0 — the same level
-    >>> # used by the ZNE executor — so REM corrects the right physical qubits.
-    >>> pm = generate_preset_pass_manager(optimization_level=0, backend=backend)
-    >>> t = pm.run(circuit)
-    >>> physical_qubits = (
-    ...     [t.layout.final_layout[q] for q in t.qubits]
-    ...     if t.layout and t.layout.final_layout
-    ...     else list(range(circuit.num_qubits))
-    ... )
-    >>> result = zne_mit.run(circuit, rem=rem, qubits=physical_qubits)
+        >>> rem = ReadoutMitigation(backend, method='m3')
+        >>> rem.cals_from_system()
+        >>> pm = generate_preset_pass_manager(optimization_level=0, backend=backend)
+        >>> t = pm.run(circuit)
+        >>> physical_qubits = (
+        ...     [t.layout.final_layout[q] for q in t.qubits]
+        ...     if t.layout and t.layout.final_layout
+        ...     else list(range(circuit.num_qubits))
+        ... )
+        >>> result = zne_mit.run(circuit, rem=rem, qubits=physical_qubits)
     """
 
     def __init__(
@@ -110,8 +104,7 @@ class ZNEMitigation:
     # ─────────────────────────────────────────────────────────────────────
 
     def _make_executor(self, rem=None, qubits=None, observable=None):
-        """
-        Build a mitiq-compatible executor for this backend.
+        """Build a mitiq-compatible executor for this backend.
 
         ``optimization_level=0`` is mandatory: the transpiler must not alter
         the circuit after mitiq's noise folding.
@@ -119,17 +112,16 @@ class ZNEMitigation:
         Two modes depending on ``observable``:
 
         - ``observable=None``: returns ``float`` — P(|0…0⟩).
-        - ``observable`` provided: returns ``MeasurementResult`` (raw bitstrings);
-          mitiq computes the expectation value internally.
+        - ``observable`` provided: returns ``MeasurementResult`` (raw
+          bitstrings); mitiq computes the expectation value internally.
 
-        Parameters
-        ----------
-        rem : ReadoutMitigation | None
-            If provided, REM correction is applied inside the executor.
-        qubits : list[int] | None
-            Physical qubits; required when ``rem`` is provided.
-        observable : mitiq.Observable | None
-            If provided, the executor returns ``MeasurementResult`` instead of ``float``.
+        Args:
+            rem (ReadoutMitigation | None): If provided, REM correction is
+                applied inside the executor.
+            qubits (list[int] | None): Physical qubits; required when ``rem``
+                is provided.
+            observable (mitiq.Observable | None): If provided, the executor
+                returns ``MeasurementResult`` instead of ``float``.
         """
         backend = self.backend
         shots = self.shots
@@ -205,30 +197,32 @@ class ZNEMitigation:
         return executor
 
     def run(self, circuit, observable=None, rem=None, qubits=None) -> float:
-        """
-        Run the circuit with ZNE and return the mitigated value.
+        """Run the circuit with ZNE and return the mitigated value.
 
         Measurements are stripped before passing to mitiq in both modes:
-        - observable mode: mitiq adds its own measurements via ``observable.measure_in()``.
-        - float mode: the executor re-adds measurements via ``measure_all()`` if absent.
-        This also lets mitiq correctly assess circuit length for the short-circuit warning.
 
-        Parameters
-        ----------
-        circuit : QuantumCircuit
-            Circuit to execute. Measurements are handled internally by mitiq.
-        observable : mitiq.Observable | None
-            Pauli observable to measure. ``None`` → P(|0…0⟩).
-            Example: ``Observable(PauliString("ZZ", support=[0, 1]))``
-        rem : ReadoutMitigation | None
-            Optional REM correction applied inside the executor.
-        qubits : list[int] | None
-            Physical qubits; required when ``rem`` is provided.
+        - observable mode: mitiq adds its own measurements via
+          ``observable.measure_in()``.
+        - float mode: the executor re-adds measurements via ``measure_all()``
+          if absent.
 
-        Returns
-        -------
-        float
-            Extrapolated ⟨observable⟩, or P(|0…0⟩) if ``observable`` is None.
+        This also lets mitiq correctly assess circuit length for the
+        short-circuit warning.
+
+        Args:
+            circuit (QuantumCircuit): Circuit to execute. Measurements are
+                handled internally by mitiq.
+            observable (mitiq.Observable | None): Pauli observable to measure.
+                ``None`` → P(|0…0⟩). Example:
+                ``Observable(PauliString("ZZ", support=[0, 1]))``
+            rem (ReadoutMitigation | None): Optional REM correction applied
+                inside the executor.
+            qubits (list[int] | None): Physical qubits; required when ``rem``
+                is provided.
+
+        Returns:
+            float: Extrapolated ⟨observable⟩, or P(|0…0⟩) if
+                ``observable`` is None.
         """
         zne = _require_mitiq_zne()
 
@@ -252,24 +246,19 @@ class ZNEMitigation:
         return float(result.real) if hasattr(result, "real") else float(result)
 
     def run_unmitigated(self, circuit, observable=None, rem=None, qubits=None) -> float:
-        """
-        Run the circuit without mitigation (scale=1) for baseline comparison.
+        """Run the circuit without mitigation (scale=1) for baseline comparison.
 
-        Parameters
-        ----------
-        circuit : QuantumCircuit
-            Circuit to execute.
-        observable : mitiq.Observable | None
-            Pauli observable to measure. ``None`` → P(|0…0⟩).
-        rem : ReadoutMitigation | None
-            Optional REM correction applied inside the executor.
-        qubits : list[int] | None
-            Physical qubits; required when ``rem`` is provided.
+        Args:
+            circuit (QuantumCircuit): Circuit to execute.
+            observable (mitiq.Observable | None): Pauli observable to measure.
+                ``None`` → P(|0…0⟩).
+            rem (ReadoutMitigation | None): Optional REM correction applied
+                inside the executor.
+            qubits (list[int] | None): Physical qubits; required when ``rem``
+                is provided.
 
-        Returns
-        -------
-        float
-            Raw ⟨observable⟩, or P(|0…0⟩) if ``observable`` is None.
+        Returns:
+            float: Raw ⟨observable⟩, or P(|0…0⟩) if ``observable`` is None.
         """
         executor = self._make_executor(rem=rem, qubits=qubits, observable=observable)
         if observable is not None:
@@ -278,23 +267,19 @@ class ZNEMitigation:
         return executor(circuit)
 
     def run_scaled(self, circuit, observable=None) -> dict[float, float]:
-        """
-        Run the circuit at each scale factor and return the noise curve.
+        """Run the circuit at each scale factor and return the noise curve.
 
         Returns a mapping ``{scale_factor: expectation_value}``. Useful for
         inspecting the noise curve before extrapolation.
 
-        Parameters
-        ----------
-        circuit : QuantumCircuit
-            Circuit to execute.
-        observable : mitiq.Observable | None
-            Pauli observable to measure. ``None`` → P(|0…0⟩).
+        Args:
+            circuit (QuantumCircuit): Circuit to execute.
+            observable (mitiq.Observable | None): Pauli observable to measure.
+                ``None`` → P(|0…0⟩).
 
-        Returns
-        -------
-        dict[float, float]
-            Scale factor → expectation value at that noise level.
+        Returns:
+            dict[float, float]: Scale factor → expectation value at that noise
+                level.
         """
         zne = _require_mitiq_zne()
         executor = self._make_executor(observable=observable)

@@ -21,17 +21,17 @@ class Yukon(AnyonTarget):
     Example:
         Instantiate the target:
 
-        ```python
-        target = Yukon()
-        ```
+        .. code-block:: python
+
+            target = Yukon()
 
         Inspect the topology:
 
-        ```python
-        print(target.name)
-        print(list(target.qubits))
-        print(target.coupling_map)
-        ```
+        .. code-block:: python
+
+            print(target.name)
+            print(list(target.qubits))
+            print(target.coupling_map)
     """
 
     def coupling_map(self):
@@ -42,7 +42,7 @@ class Yukon(AnyonTarget):
 
         Returns:
             list[tuple[int, int]]: Directed qubit connections representing
-            the hardware topology.
+                the hardware topology.
         """
         return [
             (0, 1),

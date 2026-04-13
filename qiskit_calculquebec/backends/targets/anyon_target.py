@@ -43,11 +43,12 @@ class AnyonTarget(Target, ABC):
     such as Yukon or MonarQ.
 
     The target defines:
-        * The physical qubits available on the device
-        * The device coupling map
-        * The supported gate set
-        * Gate durations and error rates
-        * Measurement operations
+
+    * The physical qubits available on the device
+    * The device coupling map
+    * The supported gate set
+    * Gate durations and error rates
+    * Measurement operations
 
     Hardware calibration data (gate errors, measurement errors, and coherence
     times) are optionally retrieved through
@@ -66,18 +67,18 @@ class AnyonTarget(Target, ABC):
     Example:
         Example of a concrete device target:
 
-        ```python
-        class Yukon(AnyonTarget):
+        .. code-block:: python
 
-            def coupling_map(self):
-                return [(0, 1), (1, 0), (1, 2), (2, 1)]
+            class Yukon(AnyonTarget):
 
-            def qubits(self):
-                return list(range(6))
+                def coupling_map(self):
+                    return [(0, 1), (1, 0), (1, 2), (2, 1)]
 
-            def device_name(self):
-                return "Yukon"
-        ```
+                def qubits(self):
+                    return list(range(6))
+
+                def device_name(self):
+                    return "Yukon"
     """
 
     @abstractmethod
@@ -113,11 +114,12 @@ class AnyonTarget(Target, ABC):
         """Initialize the hardware target.
 
         This constructor:
-            * Initializes the Qiskit ``Target``
-            * Loads qubit properties
-            * Defines the default gate set
-            * Registers supported instructions with their associated
-              duration and error rates
+
+        * Initializes the Qiskit ``Target``
+        * Loads qubit properties
+        * Defines the default gate set
+        * Registers supported instructions with their associated duration and
+          error rates
         """
         super().__init__()
         self.dt = DT

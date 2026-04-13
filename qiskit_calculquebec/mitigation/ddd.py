@@ -37,54 +37,45 @@ def _require_mitiq_ddd():
 
 
 class DDDMitigation:
-    """
-    Digital Dynamical Decoupling (DDD) for MonarQ.
+    """Digital Dynamical Decoupling (DDD) for MonarQ.
 
     Inserts decoupling gate sequences into idle windows to suppress
     dephasing noise. Results are averaged over ``num_trials`` randomized
     placements.
 
-    Parameters
-    ----------
-    backend : MonarQBackend
-        Calcul Québec backend.
-    rule : str
-        DDD rule: ``'xx'``, ``'yy'``, or ``'xyxy'`` (default).
-    num_trials : int
-        Number of repetitions to average over the stochastic placement.
-        Default: 3.
-    shots : int
-        Shots per circuit. Default: 1024.
+    Args:
+        backend (MonarQBackend): Calcul Québec backend.
+        rule (str): DDD rule: ``'xx'``, ``'yy'``, or ``'xyxy'`` (default).
+        num_trials (int): Number of repetitions to average over the stochastic
+            placement. Default: 3.
+        shots (int): Shots per circuit. Default: 1024.
 
-    Examples
-    --------
-    Default observable — P(|0…0⟩):
+    Examples:
+        Default observable — P(|0…0⟩):
 
-    >>> ddd = DDDMitigation(backend, rule='xyxy')
-    >>> result = ddd.run(circuit)
-    >>> print(f"Raw: {ddd.run_unmitigated(circuit):.4f}  DDD: {result:.4f}")
+        >>> ddd = DDDMitigation(backend, rule='xyxy')
+        >>> result = ddd.run(circuit)
+        >>> print(f"Raw: {ddd.run_unmitigated(circuit):.4f}  DDD: {result:.4f}")
 
-    Arbitrary Pauli observable:
+        Arbitrary Pauli observable:
 
-    >>> from mitiq import Observable, PauliString
-    >>> obs = Observable(PauliString("ZZ", support=[0, 1]))  # <Z0 Z1>
-    >>> result = ddd.run(circuit, observable=obs)
+        >>> from mitiq import Observable, PauliString
+        >>> obs = Observable(PauliString("ZZ", support=[0, 1]))  # <Z0 Z1>
+        >>> result = ddd.run(circuit, observable=obs)
 
-    DDD combined with REM:
+        DDD combined with REM:
 
-    >>> rem = ReadoutMitigation(backend, method='m3')
-    >>> rem.cals_from_system()
-    >>> # qubits must be derived with optimization_level=0 — the same level
-    >>> # used by the DDD executor — so REM corrects the right physical qubits.
-    >>> pm = generate_preset_pass_manager(optimization_level=0, backend=backend)
-    >>> t = pm.run(circuit)
-    >>> physical_qubits = (
-    ...     [t.layout.final_layout[q] for q in t.qubits]
-    ...     if t.layout and t.layout.final_layout
-    ...     else list(range(circuit.num_qubits))
-    ... )
-    >>> ddd = DDDMitigation(backend, rule='xyxy')
-    >>> result = ddd.run(circuit, rem=rem, qubits=physical_qubits)
+        >>> rem = ReadoutMitigation(backend, method='m3')
+        >>> rem.cals_from_system()
+        >>> pm = generate_preset_pass_manager(optimization_level=0, backend=backend)
+        >>> t = pm.run(circuit)
+        >>> physical_qubits = (
+        ...     [t.layout.final_layout[q] for q in t.qubits]
+        ...     if t.layout and t.layout.final_layout
+        ...     else list(range(circuit.num_qubits))
+        ... )
+        >>> ddd = DDDMitigation(backend, rule='xyxy')
+        >>> result = ddd.run(circuit, rem=rem, qubits=physical_qubits)
     """
 
     def __init__(
@@ -104,23 +95,21 @@ class DDDMitigation:
     # ─────────────────────────────────────────────────────────────────────
 
     def _make_executor(self, rem=None, qubits=None, observable=None):
-        """
-        Build a mitiq-compatible executor for this backend.
+        """Build a mitiq-compatible executor for this backend.
 
         Two modes depending on ``observable``:
 
         - ``observable=None``: returns ``float`` — P(|0…0⟩).
-        - ``observable`` provided: returns ``MeasurementResult`` (raw bitstrings);
-          mitiq computes the expectation value internally.
+        - ``observable`` provided: returns ``MeasurementResult`` (raw
+          bitstrings); mitiq computes the expectation value internally.
 
-        Parameters
-        ----------
-        rem : ReadoutMitigation | None
-            If provided, REM correction is applied inside the executor.
-        qubits : list[int] | None
-            Physical qubits; required when ``rem`` is provided.
-        observable : mitiq.Observable | None
-            If provided, the executor returns ``MeasurementResult`` instead of ``float``.
+        Args:
+            rem (ReadoutMitigation | None): If provided, REM correction is
+                applied inside the executor.
+            qubits (list[int] | None): Physical qubits; required when ``rem``
+                is provided.
+            observable (mitiq.Observable | None): If provided, the executor
+                returns ``MeasurementResult`` instead of ``float``.
         """
         backend = self.backend
         shots = self.shots
@@ -196,30 +185,29 @@ class DDDMitigation:
         return executor
 
     def run(self, circuit, observable=None, rem=None, qubits=None) -> float:
-        """
-        Run the circuit with DDD and return the mitigated value.
+        """Run the circuit with DDD and return the mitigated value.
 
         Measurements are stripped before passing to mitiq in both modes:
-        - observable mode: mitiq adds its own measurements via ``observable.measure_in()``.
-        - float mode: the executor re-adds measurements via ``measure_all()`` if absent.
 
-        Parameters
-        ----------
-        circuit : QuantumCircuit
-            Circuit to execute. Measurements are handled internally by mitiq.
-        observable : mitiq.Observable | None
-            Pauli observable to measure. ``None`` → P(|0…0⟩).
-            Example: ``Observable(PauliString("ZZ", support=[0, 1]))``
-        rem : ReadoutMitigation | None
-            Optional REM correction applied inside the executor.
-        qubits : list[int] | None
-            Physical qubits; required when ``rem`` is provided.
+        - observable mode: mitiq adds its own measurements via
+          ``observable.measure_in()``.
+        - float mode: the executor re-adds measurements via ``measure_all()``
+          if absent.
 
-        Returns
-        -------
-        float
-            Mitigated ⟨observable⟩ (averaged over ``num_trials``), or P(|0…0⟩)
-            if ``observable`` is None.
+        Args:
+            circuit (QuantumCircuit): Circuit to execute. Measurements are
+                handled internally by mitiq.
+            observable (mitiq.Observable | None): Pauli observable to measure.
+                ``None`` → P(|0…0⟩). Example:
+                ``Observable(PauliString("ZZ", support=[0, 1]))``
+            rem (ReadoutMitigation | None): Optional REM correction applied
+                inside the executor.
+            qubits (list[int] | None): Physical qubits; required when ``rem``
+                is provided.
+
+        Returns:
+            float: Mitigated ⟨observable⟩ (averaged over ``num_trials``), or
+                P(|0…0⟩) if ``observable`` is None.
         """
         execute_with_ddd, rules = _require_mitiq_ddd()
         executor = self._make_executor(rem=rem, qubits=qubits, observable=observable)
@@ -240,24 +228,19 @@ class DDDMitigation:
         return float(result.real) if hasattr(result, "real") else float(result)
 
     def run_unmitigated(self, circuit, observable=None, rem=None, qubits=None) -> float:
-        """
-        Run the circuit without DDD for baseline comparison.
+        """Run the circuit without DDD for baseline comparison.
 
-        Parameters
-        ----------
-        circuit : QuantumCircuit
-            Circuit to execute.
-        observable : mitiq.Observable | None
-            Pauli observable to measure. ``None`` → P(|0…0⟩).
-        rem : ReadoutMitigation | None
-            Optional REM correction applied inside the executor.
-        qubits : list[int] | None
-            Physical qubits; required when ``rem`` is provided.
+        Args:
+            circuit (QuantumCircuit): Circuit to execute.
+            observable (mitiq.Observable | None): Pauli observable to measure.
+                ``None`` → P(|0…0⟩).
+            rem (ReadoutMitigation | None): Optional REM correction applied
+                inside the executor.
+            qubits (list[int] | None): Physical qubits; required when ``rem``
+                is provided.
 
-        Returns
-        -------
-        float
-            Raw ⟨observable⟩, or P(|0…0⟩) if ``observable`` is None.
+        Returns:
+            float: Raw ⟨observable⟩, or P(|0…0⟩) if ``observable`` is None.
         """
         executor = self._make_executor(rem=rem, qubits=qubits, observable=observable)
         if observable is not None:

@@ -16,24 +16,18 @@ from qiskit_calculquebec.API.adapter import ApiAdapter
 
 
 class MonarQJob(Job):
-    """
-    Qiskit job wrapper for a single circuit submitted to MonarQ/Yukon.
+    """Qiskit job wrapper for a single circuit submitted to MonarQ/Yukon.
 
     If no ``job_id`` is provided, the circuit is submitted to the API
     immediately on construction.
 
-    Parameters
-    ----------
-    backend : MonarQBackend
-        The backend this job was submitted to.
-    job_id : str | None
-        Existing job ID to track. If ``None``, the circuit is submitted
-        immediately and the returned ID is stored.
-    circuits : list[QuantumCircuit] | None
-        List containing exactly one circuit. Required when ``job_id`` is
-        ``None``.
-    shots : int
-        Number of shots. Default: 1000.
+    Args:
+        backend (MonarQBackend): The backend this job was submitted to.
+        job_id (str | None): Existing job ID to track. If ``None``, the
+            circuit is submitted immediately and the returned ID is stored.
+        circuits (list[QuantumCircuit] | None): List containing exactly one
+            circuit. Required when ``job_id`` is ``None``.
+        shots (int): Number of shots. Default: 1000.
     """
 
     def __init__(self, backend, job_id=None, circuits=None, shots=1000):
@@ -48,18 +42,13 @@ class MonarQJob(Job):
             self._job_id = job_id
 
     def _submit_circuit(self) -> str:
-        """
-        Submit the single circuit to the API and return the job ID.
+        """Submit the single circuit to the API and return the job ID.
 
-        Returns
-        -------
-        str
-            Job ID assigned by the scheduler.
+        Returns:
+            str: Job ID assigned by the scheduler.
 
-        Raises
-        ------
-        ValueError
-            If ``circuits`` does not contain exactly one circuit.
+        Raises:
+            ValueError: If ``circuits`` does not contain exactly one circuit.
         """
         if not self.circuits or len(self.circuits) != 1:
             raise ValueError("MonarQJob can only submit one circuit at a time.")
@@ -67,27 +56,19 @@ class MonarQJob(Job):
         return CQJob(self.circuits[0], self.shots).run_getID()
 
     def _wait_for_result(self, timeout=None, wait=5) -> dict:
-        """
-        Poll the API until the job completes or fails.
+        """Poll the API until the job completes or fails.
 
-        Parameters
-        ----------
-        timeout : float | None
-            Maximum number of seconds to wait. ``None`` means no timeout.
-        wait : float
-            Seconds to sleep between polling attempts. Default: 5.
+        Args:
+            timeout (float | None): Maximum number of seconds to wait. ``None``
+                means no timeout.
+            wait (float): Seconds to sleep between polling attempts. Default: 5.
 
-        Returns
-        -------
-        dict
-            Full API response JSON for the completed job.
+        Returns:
+            dict: Full API response JSON for the completed job.
 
-        Raises
-        ------
-        JobTimeoutError
-            If ``timeout`` is exceeded before the job completes.
-        JobError
-            If the job status is ``"FAILED"``.
+        Raises:
+            JobTimeoutError: If ``timeout`` is exceeded before the job completes.
+            JobError: If the job status is ``"FAILED"``.
         """
         start_time = time.time()
 
@@ -110,24 +91,19 @@ class MonarQJob(Job):
         return result
 
     def result(self, timeout=None, wait=5) -> Result:
-        """
-        Block until the job completes and return a Qiskit ``Result``.
+        """Block until the job completes and return a Qiskit ``Result``.
 
         The API histogram (bitstring → count) is converted to both ``counts``
         and ``memory`` (hex strings repeated according to counts) for full
         Qiskit compatibility.
 
-        Parameters
-        ----------
-        timeout : float | None
-            Maximum seconds to wait. ``None`` means no timeout.
-        wait : float
-            Seconds between polling attempts. Default: 5.
+        Args:
+            timeout (float | None): Maximum seconds to wait. ``None`` means
+                no timeout.
+            wait (float): Seconds between polling attempts. Default: 5.
 
-        Returns
-        -------
-        Result
-            Qiskit result containing ``counts`` and ``memory``.
+        Returns:
+            Result: Qiskit result containing ``counts`` and ``memory``.
         """
         job_info = self._wait_for_result(timeout, wait)
         histogram = job_info["result"]["histogram"]
@@ -157,14 +133,11 @@ class MonarQJob(Job):
         )
 
     def status(self) -> JobStatus:
-        """
-        Return the current Qiskit ``JobStatus`` for this job.
+        """Return the current Qiskit ``JobStatus`` for this job.
 
-        Returns
-        -------
-        JobStatus
-            One of ``RUNNING``, ``DONE``, ``QUEUED``, ``CANCELLED``,
-            or ``ERROR``.
+        Returns:
+            JobStatus: One of ``RUNNING``, ``DONE``, ``QUEUED``,
+                ``CANCELLED``, or ``ERROR``.
         """
         response = ApiAdapter.job_by_id(self._job_id)
         status_str = response.json()["job"]["status"]["type"]
@@ -183,23 +156,18 @@ class MonarQJob(Job):
 
 
 class MultiMonarQJob(Job):
-    """
-    Qiskit job wrapper that sequences multiple circuits on a single-job backend.
+    """Qiskit job wrapper that sequences multiple circuits on a single-job backend.
 
     MonarQ/Yukon only supports one circuit per API job. This class submits
     each circuit as a separate ``MonarQJob`` and aggregates the results into
     a single Qiskit ``Result`` object.
 
-    Parameters
-    ----------
-    backend : MonarQBackend
-        The backend this job was submitted to.
-    circuits : list[QuantumCircuit]
-        Circuits to execute sequentially.
-    job_id : str | None
-        Optional composite job ID. Default: ``"multi_job"``.
-    shots : int | None
-        Shots per circuit. Falls back to ``backend.options.shots`` if ``None``.
+    Args:
+        backend (MonarQBackend): The backend this job was submitted to.
+        circuits (list[QuantumCircuit]): Circuits to execute sequentially.
+        job_id (str | None): Optional composite job ID. Default: ``"multi_job"``.
+        shots (int | None): Shots per circuit. Falls back to
+            ``backend.options.shots`` if ``None``.
     """
 
     def __init__(self, backend, circuits, job_id=None, shots=None):
@@ -213,40 +181,30 @@ class MultiMonarQJob(Job):
         ]
 
     def _wait_for_result(self, timeout=None, wait=5) -> bool:
-        """
-        Wait for all individual jobs to complete.
+        """Wait for all individual jobs to complete.
 
-        Parameters
-        ----------
-        timeout : float | None
-            Maximum seconds to wait per job. ``None`` means no timeout.
-        wait : float
-            Seconds between polling attempts. Default: 5.
+        Args:
+            timeout (float | None): Maximum seconds to wait per job. ``None``
+                means no timeout.
+            wait (float): Seconds between polling attempts. Default: 5.
 
-        Returns
-        -------
-        bool
-            Always ``True`` when all jobs have completed successfully.
+        Returns:
+            bool: Always ``True`` when all jobs have completed successfully.
         """
         for job in self._individual_jobs:
             job._wait_for_result(timeout=timeout, wait=wait)
         return True
 
     def result(self, timeout=None, wait=5) -> Result:
-        """
-        Collect results from all individual jobs and combine them.
+        """Collect results from all individual jobs and combine them.
 
-        Parameters
-        ----------
-        timeout : float | None
-            Maximum seconds to wait per job. ``None`` means no timeout.
-        wait : float
-            Seconds between polling attempts. Default: 5.
+        Args:
+            timeout (float | None): Maximum seconds to wait per job. ``None``
+                means no timeout.
+            wait (float): Seconds between polling attempts. Default: 5.
 
-        Returns
-        -------
-        Result
-            Combined Qiskit ``Result`` containing one entry per circuit.
+        Returns:
+            Result: Combined Qiskit ``Result`` containing one entry per circuit.
         """
         all_results = []
 
@@ -272,16 +230,13 @@ class MultiMonarQJob(Job):
         )
 
     def status(self) -> JobStatus:
-        """
-        Return the aggregate ``JobStatus`` across all individual jobs.
+        """Return the aggregate ``JobStatus`` across all individual jobs.
 
         Returns ``DONE`` only when all jobs have succeeded; returns ``RUNNING``
         if any job is still running; returns ``ERROR`` if any job has failed.
 
-        Returns
-        -------
-        JobStatus
-            Aggregated status.
+        Returns:
+            JobStatus: Aggregated status.
         """
         statuses = [job.status() for job in self._individual_jobs]
 

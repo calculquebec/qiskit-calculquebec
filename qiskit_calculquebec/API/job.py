@@ -13,13 +13,10 @@ from qiskit_calculquebec.API.api_utility import ApiUtility
 
 
 class JobException(Exception):
-    """
-    Raised when a job submission or polling operation fails.
+    """Raised when a job submission or polling operation fails.
 
-    Parameters
-    ----------
-    message : str
-        Human-readable description of the failure.
+    Args:
+        message (str): Human-readable description of the failure.
     """
 
     def __init__(self, message: str):
@@ -33,18 +30,14 @@ class JobException(Exception):
 
 
 class Job:
-    """
-    Wrapper for submitting a single circuit to the MonarQ/Thunderhead API.
+    """Wrapper for submitting a single circuit to the MonarQ/Thunderhead API.
 
     Converts the circuit to dictionary format, posts the job, polls for
     completion, and returns the result histogram.
 
-    Parameters
-    ----------
-    circuit : QuantumCircuit
-        The circuit to execute.
-    shots : int
-        Number of shots. Default: 1.
+    Args:
+        circuit (QuantumCircuit): The circuit to execute.
+        shots (int): Number of shots. Default: 1.
     """
 
     def __init__(self, circuit: QuantumCircuit, shots: int = 1):
@@ -52,18 +45,13 @@ class Job:
         self.shots = shots
 
     def run_getID(self) -> str:
-        """
-        Submit the job and return its ID without waiting for completion.
+        """Submit the job and return its ID without waiting for completion.
 
-        Returns
-        -------
-        str
-            The job ID assigned by the scheduler.
+        Returns:
+            str: The job ID assigned by the scheduler.
 
-        Raises
-        ------
-        JobException
-            If submission fails or the response is not 200.
+        Raises:
+            JobException: If submission fails or the response is not 200.
         """
         response = ApiAdapter.post_job(self.circuit_dict, self.shots)
         if response.status_code != 200:
@@ -71,28 +59,21 @@ class Job:
         return json.loads(response.text)["job"]["id"]
 
     def run(self, max_tries: int = -1) -> dict:
-        """
-        Submit the job and block until it succeeds, then return the histogram.
+        """Submit the job and block until it succeeds, then return the histogram.
 
         Polls the API every 200 ms. The job is considered done when its status
         is ``"SUCCEEDED"``.
 
-        Parameters
-        ----------
-        max_tries : int
-            Maximum number of polling iterations. ``-1`` means effectively
-            unlimited (2¹⁵ attempts). Default: -1.
+        Args:
+            max_tries (int): Maximum number of polling iterations. ``-1`` means
+                effectively unlimited (2¹⁵ attempts). Default: -1.
 
-        Returns
-        -------
-        dict
-            Result histogram mapping bitstrings to shot counts.
+        Returns:
+            dict: Result histogram mapping bitstrings to shot counts.
 
-        Raises
-        ------
-        JobException
-            If the job does not complete within ``max_tries`` iterations, or
-            if submission fails.
+        Raises:
+            JobException: If the job does not complete within ``max_tries``
+                iterations, or if submission fails.
         """
         if max_tries == -1:
             max_tries = 2**15
@@ -124,18 +105,13 @@ class Job:
         )
 
     def raise_api_error(self, response):
-        """
-        Parse an API error response and raise a ``JobException``.
+        """Parse an API error response and raise a ``JobException``.
 
-        Parameters
-        ----------
-        response : requests.Response
-            The failed HTTP response.
+        Args:
+            response (requests.Response): The failed HTTP response.
 
-        Raises
-        ------
-        JobException
-            Always raised with the parsed error code and message.
+        Raises:
+            JobException: Always raised with the parsed error code and message.
         """
         error = json.loads(response.text)
         raise JobException(

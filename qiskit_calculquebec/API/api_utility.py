@@ -16,25 +16,19 @@ class ApiUtility:
 
     @staticmethod
     def convert_instruction(instruction: Gate) -> dict:
-        """
-        Convert a Qiskit gate to a Thunderhead operation dictionary.
+        """Convert a Qiskit gate to a Thunderhead operation dictionary.
 
-        Parameters
-        ----------
-        instruction : Gate
-            A Qiskit gate instance with ``qubits``, ``clbits``, and ``params``
-            attributes populated (as found in ``QuantumCircuit.data``).
+        Args:
+            instruction (Gate): A Qiskit gate instance with ``qubits``,
+                ``clbits``, and ``params`` attributes populated (as found in
+                ``QuantumCircuit.data``).
 
-        Returns
-        -------
-        dict
-            Thunderhead operation dict with ``type``, ``qubits``, and
-            optionally ``bits`` or ``parameters`` fields.
+        Returns:
+            dict: Thunderhead operation dict with ``type``, ``qubits``, and
+                optionally ``bits`` or ``parameters`` fields.
 
-        Raises
-        ------
-        ValueError
-            If the instruction name is not in the supported gate set.
+        Raises:
+            ValueError: If the instruction name is not in the supported gate set.
         """
         if instruction.name in instructions:
             if len(instruction.qubits) == 1:
@@ -77,19 +71,15 @@ class ApiUtility:
 
     @staticmethod
     def convert_circuit(circuit: QuantumCircuit) -> dict:
-        """
-        Convert a ``QuantumCircuit`` to the Thunderhead circuit dictionary format.
+        """Convert a ``QuantumCircuit`` to the Thunderhead circuit dictionary format.
 
-        Parameters
-        ----------
-        circuit : QuantumCircuit
-            Circuit to convert. All instructions must be in the supported gate set.
+        Args:
+            circuit (QuantumCircuit): Circuit to convert. All instructions must
+                be in the supported gate set.
 
-        Returns
-        -------
-        dict
-            Thunderhead circuit dict with ``type``, ``bitCount``,
-            ``qubitCount``, and ``operations`` fields.
+        Returns:
+            dict: Thunderhead circuit dict with ``type``, ``bitCount``,
+                ``qubitCount``, and ``operations`` fields.
         """
         return {
             keys.TYPE: keys.CIRCUIT,
@@ -102,43 +92,30 @@ class ApiUtility:
 
     @staticmethod
     def basic_auth(username: str, password: str) -> str:
-        """
-        Build a Basic Authentication header value.
+        """Build a Basic Authentication header value.
 
-        Parameters
-        ----------
-        username : str
-            Thunderhead username.
-        password : str
-            Thunderhead access token.
+        Args:
+            username (str): Thunderhead username.
+            password (str): Thunderhead access token.
 
-        Returns
-        -------
-        str
-            ``"Basic <base64-encoded credentials>"`` header value.
+        Returns:
+            str: ``"Basic <base64-encoded credentials>"`` header value.
         """
         token = b64encode(f"{username}:{password}".encode("ascii")).decode("ascii")
         return f"Basic {token}"
 
     @staticmethod
     def headers(username: str, password: str, realm: str) -> dict[str, str]:
-        """
-        Build the HTTP request headers required by the Thunderhead API.
+        """Build the HTTP request headers required by the Thunderhead API.
 
-        Parameters
-        ----------
-        username : str
-            Thunderhead username.
-        password : str
-            Thunderhead access token.
-        realm : str
-            Organizational realm identifier.
+        Args:
+            username (str): Thunderhead username.
+            password (str): Thunderhead access token.
+            realm (str): Organizational realm identifier.
 
-        Returns
-        -------
-        dict[str, str]
-            Headers dict containing ``Authorization``, ``Content-Type``,
-            and ``X-Realm``.
+        Returns:
+            dict[str, str]: Headers dict containing ``Authorization``,
+                ``Content-Type``, and ``X-Realm``.
         """
         return {
             "Authorization": ApiUtility.basic_auth(username, password),
@@ -154,26 +131,17 @@ class ApiUtility:
         machine_name: str,
         shots: int,
     ) -> dict:
-        """
-        Build the request body for the ``POST /jobs`` endpoint.
+        """Build the request body for the ``POST /jobs`` endpoint.
 
-        Parameters
-        ----------
-        circuit : dict
-            Circuit in Thunderhead dictionary format.
-        circuit_name : str
-            Human-readable label for the circuit.
-        project_id : str
-            ID of the project under which the job will be billed.
-        machine_name : str
-            Target machine name (e.g. ``"yukon"``).
-        shots : int
-            Number of shots to execute.
+        Args:
+            circuit (dict): Circuit in Thunderhead dictionary format.
+            circuit_name (str): Human-readable label for the circuit.
+            project_id (str): ID of the project under which the job will be billed.
+            machine_name (str): Target machine name (e.g. ``"yukon"``).
+            shots (int): Number of shots to execute.
 
-        Returns
-        -------
-        dict
-            JSON-serializable body for the job creation request.
+        Returns:
+            dict: JSON-serializable body for the job creation request.
         """
         return {
             keys.NAME: circuit_name,

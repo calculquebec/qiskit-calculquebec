@@ -7,8 +7,7 @@ API client classes for Calcul Québec quantum backends.
 
 
 class ProjectParameterError(ValueError):
-    """
-    Raised when project parameter validation fails in a client constructor.
+    """Raised when project parameter validation fails in a client constructor.
 
     Either ``project_name`` or ``project_id`` must be provided, but not both.
     """
@@ -16,29 +15,22 @@ class ProjectParameterError(ValueError):
 
 
 class ApiClient:
-    """
-    Data container holding authentication and routing information for the API.
+    """Data container holding authentication and routing information for the API.
 
     Either ``project_name`` or ``project_id`` must be supplied. If both are
     provided, ``project_id`` takes precedence and ``project_name`` is ignored.
 
-    Parameters
-    ----------
-    host : str
-        Base URL of the Thunderhead server (e.g. ``"https://..."``).
-    user : str
-        User identifier (username).
-    access_token : str
-        API access token for authentication.
-    realm : str
-        Organizational realm associated with the machine.
-    project_name : str
-        Name of the project. Resolved to a project ID at initialization.
-        Mutually exclusive with ``project_id``.
-    project_id : str
-        Direct project ID. Mutually exclusive with ``project_name``.
-    circuit_name : str
-        Label attached to submitted circuits. Default: ``"none"``.
+    Args:
+        host (str): Base URL of the Thunderhead server (e.g. ``"https://..."``).
+        user (str): User identifier (username).
+        access_token (str): API access token for authentication.
+        realm (str): Organizational realm associated with the machine.
+        project_name (str): Name of the project. Resolved to a project ID at
+            initialization. Mutually exclusive with ``project_id``.
+        project_id (str): Direct project ID. Mutually exclusive with
+            ``project_name``.
+        circuit_name (str): Label attached to submitted circuits.
+            Default: ``"none"``.
     """
 
     @property
@@ -105,26 +97,18 @@ class ApiClient:
 
 
 class CalculQuebecClient(ApiClient):
-    """
-    Client for Calcul Québec quantum infrastructure.
+    """Client for Calcul Québec quantum infrastructure.
 
     Specializes ``ApiClient`` with the ``"calculqc"`` realm and a simplified
     constructor signature (no ``realm`` argument required).
 
-    Parameters
-    ----------
-    host : str
-        Base URL of the Thunderhead server.
-    user : str
-        User identifier.
-    access_token : str
-        API access token.
-    project_name : str
-        Project name (mutually exclusive with ``project_id``).
-    project_id : str
-        Project ID (mutually exclusive with ``project_name``).
-    circuit_name : str
-        Label for submitted circuits. Default: ``"none"``.
+    Args:
+        host (str): Base URL of the Thunderhead server.
+        user (str): User identifier.
+        access_token (str): API access token.
+        project_name (str): Project name (mutually exclusive with ``project_id``).
+        project_id (str): Project ID (mutually exclusive with ``project_name``).
+        circuit_name (str): Label for submitted circuits. Default: ``"none"``.
     """
 
     def __init__(
@@ -148,27 +132,19 @@ class CalculQuebecClient(ApiClient):
 
 
 class MonarqClient(CalculQuebecClient):
-    """
-    Deprecated alias for ``CalculQuebecClient``.
+    """Deprecated alias for ``CalculQuebecClient``.
 
     .. deprecated::
         Use ``CalculQuebecClient`` instead. This class will be removed in a
         future release.
 
-    Parameters
-    ----------
-    host : str
-        Base URL of the Thunderhead server.
-    user : str
-        User identifier.
-    access_token : str
-        API access token.
-    project_name : str
-        Project name (mutually exclusive with ``project_id``).
-    project_id : str
-        Project ID (mutually exclusive with ``project_name``).
-    circuit_name : str
-        Label for submitted circuits. Default: ``"none"``.
+    Args:
+        host (str): Base URL of the Thunderhead server.
+        user (str): User identifier.
+        access_token (str): API access token.
+        project_name (str): Project name (mutually exclusive with ``project_id``).
+        project_id (str): Project ID (mutually exclusive with ``project_name``).
+        circuit_name (str): Label for submitted circuits. Default: ``"none"``.
     """
 
     def __init__(

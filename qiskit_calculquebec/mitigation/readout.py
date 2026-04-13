@@ -72,40 +72,36 @@ def _require_mthree():
 
 # ══════════════════════════════════════════════════════════════════════════
 class ReadoutMitigation:
-    """
-    Readout Error Mitigation (REM) for MonarQ.
+    """Readout Error Mitigation (REM) for MonarQ.
 
     Calibration data (P(0|0) and P(1|1) per qubit) is loaded from the
     Anyon benchmark via the Calcul Québec API — no calibration circuits
     are submitted to the hardware.
 
-    Parameters
-    ----------
-    backend : MonarQBackend
-        Calcul Québec backend initialized with an ``ApiClient``.
-    method : str
-        ``'matrix'`` (mitiq, exact, limited to ~12 qubits) or
-        ``'m3'`` (mthree, scalable to 24+ qubits). Default: ``'m3'``.
-    iter_threshold : int
-        (M3 only) Number of distinct bitstrings above which the iterative
-        solver (GMRES) is preferred over the direct solver. Default: 4096.
+    Args:
+        backend (MonarQBackend): Calcul Québec backend initialized with an
+            ``ApiClient``.
+        method (str): ``'matrix'`` (mitiq, exact, limited to ~12 qubits) or
+            ``'m3'`` (mthree, scalable to 24+ qubits). Default: ``'m3'``.
+        iter_threshold (int): (M3 only) Number of distinct bitstrings above
+            which the iterative solver (GMRES) is preferred over the direct
+            solver. Default: 4096.
 
-    Examples
-    --------
-    M3 method (recommended for MonarQ 24 qubits):
+    Examples:
+        M3 method (recommended for MonarQ 24 qubits):
 
-    >>> mit = ReadoutMitigation(backend, method='m3')
-    >>> mit.cals_from_system()
-    >>> quasi = mit.apply_correction(counts_raw, qubits=physical_qubits)
-    >>> counts_mit = {k: int(round(v * shots))
-    ...               for k, v in quasi.nearest_probability_distribution().items()
-    ...               if round(v * shots) > 0}
+        >>> mit = ReadoutMitigation(backend, method='m3')
+        >>> mit.cals_from_system()
+        >>> quasi = mit.apply_correction(counts_raw, qubits=physical_qubits)
+        >>> counts_mit = {k: int(round(v * shots))
+        ...               for k, v in quasi.nearest_probability_distribution().items()
+        ...               if round(v * shots) > 0}
 
-    Matrix method (mitiq-compatible, small circuits):
+        Matrix method (mitiq-compatible, small circuits):
 
-    >>> mit = ReadoutMitigation(backend, method='matrix')
-    >>> mit.cals_from_system()
-    >>> counts_mit = mit.apply_correction(counts_raw, qubits=physical_qubits)
+        >>> mit = ReadoutMitigation(backend, method='matrix')
+        >>> mit.cals_from_system()
+        >>> counts_mit = mit.apply_correction(counts_raw, qubits=physical_qubits)
     """
 
     def __init__(self, backend, method: str = "m3", iter_threshold: int = 4096):
@@ -126,15 +122,13 @@ class ReadoutMitigation:
     # ─────────────────────────────────────────────────────────────────────
 
     def cals_from_system(self, qubits: list[int] | None = None):
-        """
-        Load P(0|0) and P(1|1) from the Anyon benchmark (Calcul Québec API).
+        """Load P(0|0) and P(1|1) from the Anyon benchmark (Calcul Québec API).
 
         No calibration circuits are submitted to the hardware.
 
-        Parameters
-        ----------
-        qubits : list[int] | None
-            Physical qubits to calibrate. ``None`` → all qubits on the backend.
+        Args:
+            qubits (list[int] | None): Physical qubits to calibrate. ``None``
+                → all qubits on the backend.
         """
         if qubits is None:
             qubits = list(range(self.num_qubits))
@@ -173,13 +167,11 @@ class ReadoutMitigation:
         )
 
     def cals_from_matrices(self, matrices: list):
-        """
-        Initialize calibration from a list of 2×2 NumPy matrices.
+        """Initialize calibration from a list of 2×2 NumPy matrices.
 
-        Parameters
-        ----------
-        matrices : list[np.ndarray | None]
-            List of length ``num_qubits``. Use ``None`` for uncalibrated qubits.
+        Args:
+            matrices (list[np.ndarray | None]): List of length ``num_qubits``.
+                Use ``None`` for uncalibrated qubits.
         """
         matrices = list(matrices)
         if len(matrices) != self.num_qubits:
@@ -193,24 +185,18 @@ class ReadoutMitigation:
         self.faulty_qubits = _faulty_qubit_checker(self.single_qubit_cals)
 
     def readout_fidelity(self, qubits: list[int] | None = None) -> list:
-        """
-        Return the readout fidelity (P(0|0), P(1|1), mean) per qubit.
+        """Return the readout fidelity (P(0|0), P(1|1), mean) per qubit.
 
-        Parameters
-        ----------
-        qubits : list[int] | None
-            Qubits to query. ``None`` → all qubits.
+        Args:
+            qubits (list[int] | None): Qubits to query. ``None`` → all qubits.
 
-        Returns
-        -------
-        list[dict | None]
-            Each entry is ``{'p00': float, 'p11': float, 'mean': float}``,
-            or ``None`` if the qubit is not calibrated.
+        Returns:
+            list[dict | None]: Each entry is
+                ``{'p00': float, 'p11': float, 'mean': float}``, or ``None``
+                if the qubit is not calibrated.
 
-        Raises
-        ------
-        RuntimeError
-            If calibration has not been loaded yet.
+        Raises:
+            RuntimeError: If calibration has not been loaded yet.
         """
         if self.single_qubit_cals is None:
             raise RuntimeError("Mitigator not calibrated. Call cals_from_system() first.")
@@ -231,36 +217,34 @@ class ReadoutMitigation:
     # ─────────────────────────────────────────────────────────────────────
 
     def apply_correction(self, counts, qubits: list[int], **kwargs):
-        """
-        Apply REM correction to raw measurement counts.
+        """Apply REM correction to raw measurement counts.
 
-        Parameters
-        ----------
-        counts : dict
-            Qiskit counts dict (little-endian bitstrings → shot count).
-        qubits : list[int]
-            Physical qubits corresponding to the bitstring bits, in the
-            same order as the bits in the bitstring.
-        **kwargs
-            Additional parameters passed to the underlying method.
+        Args:
+            counts (dict): Qiskit counts dict (little-endian bitstrings →
+                shot count).
+            qubits (list[int]): Physical qubits corresponding to the bitstring
+                bits, in the same order as the bits in the bitstring.
+            **kwargs: Additional parameters passed to the underlying method.
 
-            *For method='m3':*
-              - ``distance`` (int | None): max Hamming distance, default ``min(n, 3)``.
-              - ``solver`` (str): ``'auto'``, ``'direct'``, or ``'iterative'``.
-              - ``max_iter`` (int): max GMRES iterations, default 25.
-              - ``tol`` (float): GMRES tolerance, default 1e-4.
-              - ``details`` (bool): also return solver metrics.
+                For method='m3':
 
-        Returns
-        -------
-        *For method='matrix'*: ``dict`` of corrected counts (same format as input).
-        *For method='m3'*: ``QuasiDistribution`` (mthree).
-            Convert with ``quasi.nearest_probability_distribution()``.
+                - ``distance`` (int | None): max Hamming distance, default
+                  ``min(n, 3)``.
+                - ``solver`` (str): ``'auto'``, ``'direct'``, or
+                  ``'iterative'``.
+                - ``max_iter`` (int): max GMRES iterations, default 25.
+                - ``tol`` (float): GMRES tolerance, default 1e-4.
+                - ``details`` (bool): also return solver metrics.
 
-        Raises
-        ------
-        RuntimeError
-            If calibration has not been loaded, or if a requested qubit is not calibrated.
+        Returns:
+            dict: Corrected counts (same format as input) for
+                ``method='matrix'``, or ``QuasiDistribution`` (mthree) for
+                ``method='m3'``. Convert the latter with
+                ``quasi.nearest_probability_distribution()``.
+
+        Raises:
+            RuntimeError: If calibration has not been loaded, or if a
+                requested qubit is not calibrated.
         """
         if self.single_qubit_cals is None:
             raise RuntimeError("Mitigator not calibrated. Call cals_from_system() first.")
@@ -286,8 +270,7 @@ class ReadoutMitigation:
     # ─────────────────────────────────────────────────────────────────────
 
     def _apply_matrix(self, counts: dict, qubits: list[int]) -> dict:
-        """
-        Apply REM via inverse confusion matrix (mitiq).
+        """Apply REM via inverse confusion matrix (mitiq).
 
         Builds A = ⊗ A_i then applies A⁺ to the counts.
         Memory cost: O(4ⁿ) — practical up to ~12 qubits.
@@ -322,8 +305,7 @@ class ReadoutMitigation:
         return corrected_counts
 
     def _build_inv_confusion_matrix(self, qubits: list[int]) -> np.ndarray:
-        """
-        Build the tensor product of pseudo-inverse local calibration matrices.
+        """Build the tensor product of pseudo-inverse local calibration matrices.
 
         A⁺ = pinv(A_q0) ⊗ pinv(A_q1) ⊗ … ⊗ pinv(A_qn-1)
         """
@@ -331,25 +313,18 @@ class ReadoutMitigation:
         return reduce(np.kron, pinv_matrices)
 
     def get_confusion_matrix(self, qubits: list[int]) -> np.ndarray:
-        """
-        Return the direct (non-inverted) confusion matrix for the given qubits.
+        """Return the direct (non-inverted) confusion matrix for the given qubits.
 
         Useful for visualization (e.g. heatmap).
 
-        Parameters
-        ----------
-        qubits : list[int]
-            Physical qubits to include.
+        Args:
+            qubits (list[int]): Physical qubits to include.
 
-        Returns
-        -------
-        np.ndarray
-            Tensor product of local calibration matrices.
+        Returns:
+            np.ndarray: Tensor product of local calibration matrices.
 
-        Raises
-        ------
-        RuntimeError
-            If calibration has not been loaded.
+        Raises:
+            RuntimeError: If calibration has not been loaded.
         """
         if self.single_qubit_cals is None:
             raise RuntimeError("Mitigator not calibrated.")
@@ -357,25 +332,19 @@ class ReadoutMitigation:
         return reduce(np.kron, mats)
 
     def get_inv_confusion_matrix(self, qubits: list[int]) -> np.ndarray:
-        """
-        Return the inverse confusion matrix (tensor product of pseudo-inverses).
+        """Return the inverse confusion matrix (tensor product of pseudo-inverses).
 
         Useful for visualization or reuse in custom correction pipelines.
 
-        Parameters
-        ----------
-        qubits : list[int]
-            Physical qubits to include.
+        Args:
+            qubits (list[int]): Physical qubits to include.
 
-        Returns
-        -------
-        np.ndarray
-            Tensor product of pseudo-inverse local calibration matrices.
+        Returns:
+            np.ndarray: Tensor product of pseudo-inverse local calibration
+                matrices.
 
-        Raises
-        ------
-        RuntimeError
-            If calibration has not been loaded.
+        Raises:
+            RuntimeError: If calibration has not been loaded.
         """
         if self.single_qubit_cals is None:
             raise RuntimeError("Mitigator not calibrated.")
@@ -396,34 +365,30 @@ class ReadoutMitigation:
         details: bool = False,
         return_mitigation_overhead: bool = False,
     ):
-        """
-        Apply REM via M3 (Matrix-free Measurement Mitigation, mthree).
+        """Apply REM via M3 (Matrix-free Measurement Mitigation, mthree).
 
         Works on the reduced sub-matrix of observed bitstrings only.
         Scalable to 24 qubits and beyond.
 
-        Parameters
-        ----------
-        counts : dict
-            Raw measurement counts.
-        qubits : list[int]
-            Physical qubits corresponding to the bitstring bits.
-        distance : int | None
-            Max Hamming distance. ``None`` → ``min(n, 3)``. ``-1`` → full distance.
-        solver : str
-            ``'auto'`` selects based on available memory, ``'direct'``, or ``'iterative'``.
-        max_iter : int
-            Max GMRES iterations (iterative solver only). Default: 25.
-        tol : float
-            GMRES convergence tolerance. Default: 1e-4.
-        details : bool
-            If True, return solver metrics alongside the result.
-        return_mitigation_overhead : bool
-            If True, compute and attach the mitigation overhead (gamma²).
+        Args:
+            counts (dict): Raw measurement counts.
+            qubits (list[int]): Physical qubits corresponding to the bitstring
+                bits.
+            distance (int | None): Max Hamming distance. ``None`` →
+                ``min(n, 3)``. ``-1`` → full distance.
+            solver (str): ``'auto'`` selects based on available memory,
+                ``'direct'``, or ``'iterative'``.
+            max_iter (int): Max GMRES iterations (iterative solver only).
+                Default: 25.
+            tol (float): GMRES convergence tolerance. Default: 1e-4.
+            details (bool): If True, return solver metrics alongside the
+                result.
+            return_mitigation_overhead (bool): If True, compute and attach the
+                mitigation overhead (gamma²).
 
-        Returns
-        -------
-        QuasiDistribution, or (QuasiDistribution, dict) if ``details=True``.
+        Returns:
+            QuasiDistribution: Mitigated quasi-distribution, or
+                ``(QuasiDistribution, dict)`` if ``details=True``.
         """
         from time import perf_counter
 
@@ -512,8 +477,7 @@ class ReadoutMitigation:
     # ─────────────────────────────────────────────────────────────────────
 
     def _form_cals(self, qubits) -> np.ndarray:
-        """
-        Return a 1-D calibration array in the format expected by mthree solvers.
+        """Return a 1-D calibration array in the format expected by mthree solvers.
 
         Format: [P00_q(n-1), P10_q(n-1), P01_q(n-1), P11_q(n-1), …]
         Qubits are reversed to match M3's internal indexing convention.
@@ -525,22 +489,17 @@ class ReadoutMitigation:
         return cals
 
     def reduced_cal_matrix(self, counts, qubits, distance=None):
-        """
-        Return the reduced calibration sub-matrix for the observed bitstrings (M3).
+        """Return the reduced calibration sub-matrix for the observed bitstrings (M3).
 
-        Parameters
-        ----------
-        counts : dict
-            Measurement counts.
-        qubits : list[int]
-            Physical qubits.
-        distance : int | None
-            Max Hamming distance. ``None`` → ``min(n, 3)``.
+        Args:
+            counts (dict): Measurement counts.
+            qubits (list[int]): Physical qubits.
+            distance (int | None): Max Hamming distance. ``None`` →
+                ``min(n, 3)``.
 
-        Returns
-        -------
-        (np.ndarray, dict)
-            Reduced calibration matrix and bitstring index mapping.
+        Returns:
+            tuple[np.ndarray, dict]: Reduced calibration matrix and bitstring
+                index mapping.
         """
         _direct_solve, _cal_matrix, *_ = _require_mthree()
         return _cal_matrix(self, counts, qubits, distance)
@@ -551,8 +510,7 @@ class ReadoutMitigation:
 # ─────────────────────────────────────────────────────────────────────────
 
 def _faulty_qubit_checker(cals: list) -> list:
-    """
-    Return indices of qubits with inverted calibration (P(0|1) >= P(0|0)).
+    """Return indices of qubits with inverted calibration (P(0|1) >= P(0|0)).
 
     A qubit is considered faulty when the probability of reading 0 given
     the qubit was prepared in |1⟩ is at least as high as reading 0 given

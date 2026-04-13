@@ -20,8 +20,7 @@ from qiskit_calculquebec.custom_gates.ry_m90_gate import RYm90Gate
 
 
 class MonarQBackend(Backend):
-    """
-    Custom backend for the Yukon 6-qubit device.
+    """Custom backend for the Yukon 6-qubit device.
 
     Features:
     - Integrates with Calcul Québec API
@@ -46,10 +45,8 @@ class MonarQBackend(Backend):
         transpiler to convert gate and :class:`~qiskit.circuit.Delay` durations
         expressed in seconds into integer multiples of the hardware timestep.
 
-        Returns
-        -------
-        float
-            Clock period in seconds (32 ns for Anyon devices).
+        Returns:
+            float: Clock period in seconds (32 ns for Anyon devices).
         """
         return DT
 
@@ -64,21 +61,16 @@ class MonarQBackend(Backend):
         return Options(shots=1024)
 
     def __init__(self, machine_name: str = "monarq", client: ApiClient = None):
-        """
-        Initialize the MonarQ backend.
+        """Initialize the MonarQ backend.
 
-        Parameters
-        ----------
-        machine_name : str
-            Target device: ``"monarq"`` (24 qubits) or ``"yukon"`` (6 qubits).
-            Default: ``"monarq"``.
-        client : ApiClient
-            Authenticated API client. Required.
+        Args:
+            machine_name (str): Target device: ``"monarq"`` (24 qubits) or
+                ``"yukon"`` (6 qubits). Default: ``"monarq"``.
+            client (ApiClient): Authenticated API client. Required.
 
-        Raises
-        ------
-        ValueError
-            If ``client`` is ``None`` or ``machine_name`` is not supported.
+        Raises:
+            ValueError: If ``client`` is ``None`` or ``machine_name`` is not
+                supported.
         """
         super().__init__()
         if client is None:
@@ -104,23 +96,18 @@ class MonarQBackend(Backend):
         self.options.set_validator("shots", (1, 1024))
 
     def _validate_circuit(self, circuits):
-        """
-        Validate that each circuit satisfies hardware constraints.
+        """Validate that each circuit satisfies hardware constraints.
 
         Rules:
         - Every circuit must contain at least one measurement.
         - Multi-qubit measurements are not supported.
         - Gates cannot be applied to a qubit after it has been measured.
 
-        Parameters
-        ----------
-        circuits : list[QuantumCircuit]
-            Circuits to validate.
+        Args:
+            circuits (list[QuantumCircuit]): Circuits to validate.
 
-        Raises
-        ------
-        ValueError
-            If any constraint is violated.
+        Raises:
+            ValueError: If any constraint is violated.
         """
         for qc in circuits:
             measured_qubits = set()
@@ -144,8 +131,7 @@ class MonarQBackend(Backend):
                 raise ValueError("All circuits must contain at least one measurement.")
 
     def run(self, circuits, **kwargs):
-        """
-        Submit circuits to the backend and return a MultiMonarQJob.
+        """Submit circuits to the backend and return a MultiMonarQJob.
 
         Automatically applies :class:`DelayToIdentityPass` after any external
         optimization, so :class:`~qiskit.circuit.Delay` gates are always
@@ -153,7 +139,8 @@ class MonarQBackend(Backend):
 
         Args:
             circuits: Circuit or list of circuits to execute.
-            shots: Optional number of shots to execute (capped at 1024).
+            **kwargs: Optional keyword arguments. ``shots`` sets the number of
+                shots to execute (capped at 1024).
         """
         if not isinstance(circuits, (list, tuple)):
             circuits = [circuits]
@@ -178,24 +165,19 @@ class MonarQBackend(Backend):
         return MultiMonarQJob(self, circuits, shots=shots)
 
     class ReplaceRYPass(TransformationPass):
-        """
-        Transpiler pass that replaces ``RY(±π/2)`` with the native
+        """Transpiler pass that replaces ``RY(±π/2)`` with the native
         ``RY90Gate`` / ``RYm90Gate`` custom gates.
         """
 
         def run(self, dag):
-            """
-            Apply the substitution to all matching nodes in the DAG.
+            """Apply the substitution to all matching nodes in the DAG.
 
-            Parameters
-            ----------
-            dag : DAGCircuit
-                Input circuit DAG.
+            Args:
+                dag (DAGCircuit): Input circuit DAG.
 
-            Returns
-            -------
-            DAGCircuit
-                Modified DAG with ``RY90Gate`` / ``RYm90Gate`` substitutions.
+            Returns:
+                DAGCircuit: Modified DAG with ``RY90Gate`` / ``RYm90Gate``
+                    substitutions.
             """
             for node in dag.op_nodes():
                 if node.name == "ry" and np.isclose(node.op.params[0], np.pi / 2):
@@ -205,8 +187,7 @@ class MonarQBackend(Backend):
             return dag
 
     class DelayToIdentityPass(TransformationPass):
-        """
-        Transpiler pass to expand each :class:`~qiskit.circuit.Delay` into a
+        """Transpiler pass to expand each :class:`~qiskit.circuit.Delay` into a
         sequence of :class:`~qiskit.circuit.library.IGate` operations.
 
         On Anyon hardware, ``IGate`` is the native idle instruction and
@@ -216,22 +197,19 @@ class MonarQBackend(Backend):
 
         The duration of the ``Delay`` must be expressed in ``dt`` units
         (i.e. the circuit must have been scheduled before this pass runs,
-        or the delay must have been inserted with ``unit='dt'``).  Delays
+        or the delay must have been inserted with ``unit='dt'``). Delays
         given in seconds are converted to dt by dividing by ``DT`` and
         rounding to the nearest integer; a warning is emitted when rounding
         is necessary.
 
-        Parameters
-        ----------
-        dt : float
-            Hardware clock period in seconds.  Defaults to
-            :data:`~qiskit_calculquebec.backends.targets.anyon_target.DT`.
+        Args:
+            dt (float): Hardware clock period in seconds. Defaults to
+                :data:`~qiskit_calculquebec.backends.targets.anyon_target.DT`.
 
-        Examples
-        --------
-        >>> pass_ = MonarQBackend.DelayToIdentityPass()
-        >>> pm = PassManager([pass_])
-        >>> expanded = pm.run(scheduled_circuit)
+        Example:
+            >>> pass_ = MonarQBackend.DelayToIdentityPass()
+            >>> pm = PassManager([pass_])
+            >>> expanded = pm.run(scheduled_circuit)
         """
 
         def __init__(self, dt: float = DT):
@@ -239,18 +217,14 @@ class MonarQBackend(Backend):
             self.dt = dt
 
         def run(self, dag):
-            """
-            Expand all ``Delay`` nodes in the DAG into ``IGate`` sequences.
+            """Expand all ``Delay`` nodes in the DAG into ``IGate`` sequences.
 
-            Parameters
-            ----------
-            dag : DAGCircuit
-                Input circuit DAG.
+            Args:
+                dag (DAGCircuit): Input circuit DAG.
 
-            Returns
-            -------
-            DAGCircuit
-                Modified DAG with ``Delay`` nodes replaced by ``IGate`` chains.
+            Returns:
+                DAGCircuit: Modified DAG with ``Delay`` nodes replaced by
+                    ``IGate`` chains.
             """
             from qiskit.dagcircuit import DAGCircuit
 
@@ -289,8 +263,7 @@ class MonarQBackend(Backend):
             return dag
 
     def get_pass_manager(self, optimization_level: int = 3) -> StagedPassManager:
-        """
-        Return a fully configured pass manager for this backend.
+        """Return a fully configured pass manager for this backend.
 
         This is the recommended way to transpile circuits intended for
         MonarQ/Yukon. It wraps :func:`~qiskit.transpiler.generate_preset_pass_manager`
@@ -302,27 +275,22 @@ class MonarQBackend(Backend):
           :class:`~qiskit.circuit.Delay` into the equivalent number of
           ``IGate`` operations (1 ``IGate`` = 1 dt = 32 ns).
 
-        Parameters
-        ----------
-        optimization_level : int
-            Preset optimisation level passed to
-            :func:`~qiskit.transpiler.generate_preset_pass_manager` (0–3).
-            Defaults to 3.
+        Args:
+            optimization_level (int): Preset optimisation level passed to
+                :func:`~qiskit.transpiler.generate_preset_pass_manager` (0–3).
+                Default: 3.
 
-        Returns
-        -------
-        StagedPassManager
-            A staged pass manager ready to call ``.run(circuit)``.
+        Returns:
+            StagedPassManager: A staged pass manager ready to call ``.run(circuit)``.
 
-        Examples
-        --------
-        .. code-block:: python
+        Example:
+            .. code-block:: python
 
-            pm = backend.get_pass_manager(optimization_level=3)
-            transpiled_qc = pm.run(qc)
+                pm = backend.get_pass_manager(optimization_level=3)
+                transpiled_qc = pm.run(qc)
 
-            sampler = Sampler(mode=backend)
-            job = sampler.run([transpiled_qc], shots=1000)
+                sampler = Sampler(mode=backend)
+                job = sampler.run([transpiled_qc], shots=1000)
         """
         pm = generate_preset_pass_manager(
             optimization_level=optimization_level, backend=self
@@ -333,22 +301,17 @@ class MonarQBackend(Backend):
         return pm
 
     def transpile(self, circuit):
-        """
-        Transpile a circuit for this backend at optimization level 3.
+        """Transpile a circuit for this backend at optimization level 3.
 
         Applies:
         - ``ReplaceRYPass``: rewrites ``RY(±π/2)`` to native ``RY90`` / ``RYm90`` gates.
         - ``DelayToIdentityPass``: expands ``Delay`` gates into ``IGate`` sequences.
         - Level-3 preset optimization passes.
 
-        Parameters
-        ----------
-        circuit : QuantumCircuit
-            Circuit to transpile.
+        Args:
+            circuit (QuantumCircuit): Circuit to transpile.
 
-        Returns
-        -------
-        QuantumCircuit
-            Transpiled circuit ready for execution.
+        Returns:
+            QuantumCircuit: Transpiled circuit ready for execution.
         """
         return self.get_pass_manager(optimization_level=3).run(circuit)
