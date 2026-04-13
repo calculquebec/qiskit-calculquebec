@@ -28,35 +28,13 @@ html_static_path = ["_static"]
 extensions = [
     "sphinx.ext.autodoc",
     "sphinx.ext.napoleon",
-    "sphinx.ext.apidoc",
     "sphinx.ext.autosummary",
     "myst_parser",
 ]
 
-apidoc_modules = [
-    {
-        "path": "../qiskit_calculquebec",
-        "destination": "rtd/code_ref/",
-        "exclude_patterns": ["**/test*"],
-        "max_depth": 3,
-        "follow_links": False,
-        "separate_modules": True,
-        "include_private": False,
-        "no_headings": False,
-        "module_first": False,
-        "implicit_namespaces": False,
-        "automodule_options": {
-            "members",
-            "show-inheritance",
-        },
-    },
-]
-
 # Autodoc and Autosummary configuration
 autodoc_default_options = {
-    "members": True,
     "show-inheritance": True,
-    "special-members": "__init__",
 }
 # Include both class docstring and __init__ docstring
 autoclass_content = "both"
