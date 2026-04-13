@@ -8,6 +8,10 @@ pas modifier le circuit après le folding de bruit.
 """
 
 
+from qiskit.transpiler.preset_passmanagers import generate_preset_pass_manager
+from qiskit_ibm_runtime import SamplerV2
+
+
 def _require_mitiq_zne():
     try:
         from mitiq import zne
@@ -117,9 +121,6 @@ class ZNEMitigation:
         observable : mitiq.Observable | None
             Si fourni, l'executor retourne MeasurementResult au lieu de float.
         """
-        from qiskit.transpiler.preset_passmanagers import generate_preset_pass_manager
-        from qiskit_ibm_runtime import SamplerV2 as Sampler
-
         backend = self.backend
         shots = self.shots
 
@@ -136,7 +137,7 @@ class ZNEMitigation:
                 transpiled = pm.run(circ)
                 if not isinstance(transpiled, list):
                     transpiled = [transpiled]
-                sampler = Sampler(mode=backend)
+                sampler = SamplerV2(mode=backend)
                 counts = sampler.run(transpiled, shots=shots).result()[0].join_data().get_counts()
                 counts = {"".join(k.split()): v for k, v in counts.items()}
 
@@ -170,7 +171,7 @@ class ZNEMitigation:
                 transpiled = pm.run(circ)
                 if not isinstance(transpiled, list):
                     transpiled = [transpiled]
-                sampler = Sampler(mode=backend)
+                sampler = SamplerV2(mode=backend)
                 counts = sampler.run(transpiled, shots=shots).result()[0].join_data().get_counts()
                 counts = {"".join(k.split()): v for k, v in counts.items()}
                 n = circuit.num_qubits

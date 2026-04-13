@@ -12,6 +12,10 @@ Règles disponibles (mitiq.ddd.rules) :
 """
 
 
+from qiskit.transpiler.preset_passmanagers import generate_preset_pass_manager
+from qiskit_ibm_runtime import SamplerV2
+
+
 _VALID_RULES = ("xx", "yy", "xyxy")
 
 
@@ -107,9 +111,6 @@ class DDDMitigation:
         observable : mitiq.Observable | None
             Si fourni, l'executor retourne MeasurementResult au lieu de float.
         """
-        from qiskit.transpiler.preset_passmanagers import generate_preset_pass_manager
-        from qiskit_ibm_runtime import SamplerV2 as Sampler
-
         backend = self.backend
         shots = self.shots
 
@@ -126,7 +127,7 @@ class DDDMitigation:
                 transpiled = pm.run(circ)
                 if not isinstance(transpiled, list):
                     transpiled = [transpiled]
-                sampler = Sampler(mode=backend)
+                sampler = SamplerV2(mode=backend)
                 counts = sampler.run(transpiled, shots=shots).result()[0].join_data().get_counts()
                 counts = {"".join(k.split()): v for k, v in counts.items()}
 
@@ -160,7 +161,7 @@ class DDDMitigation:
                 transpiled = pm.run(circ)
                 if not isinstance(transpiled, list):
                     transpiled = [transpiled]
-                sampler = Sampler(mode=backend)
+                sampler = SamplerV2(mode=backend)
                 counts = sampler.run(transpiled, shots=shots).result()[0].join_data().get_counts()
                 counts = {"".join(k.split()): v for k, v in counts.items()}
                 n = circuit.num_qubits
