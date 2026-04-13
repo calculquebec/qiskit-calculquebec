@@ -20,12 +20,24 @@ build-backend = "setuptools.build_meta"
 
 [project.optional-dependencies]
 test = ["pytest", "pytest-mock"]
+mitigation = ["mitiq>=1.0", "mthree", "psutil"]
 
 [tool.setuptools]
-packages = ["qiskit_calculquebec"]
+packages = [
+    "qiskit_calculquebec",
+    "qiskit_calculquebec.mitigation",
+]
 
 [tool.setuptools.package-data]
-qiskit_calculquebec = ["custom_gates/*.py", "API/*.py", "provider/*.py", "transpiler/*.py", "backends/*.py", "backends/targets/*.py"]
+qiskit_calculquebec = [
+    "custom_gates/*.py",
+    "API/*.py",
+    "provider/*.py",
+    "transpiler/*.py",
+    "backends/*.py",
+    "backends/targets/*.py",
+    "mitigation/*.py",
+]
 
 [tool.setuptools.exclude-package-data]
 qiskit_calculquebec = ["tests/*"]
