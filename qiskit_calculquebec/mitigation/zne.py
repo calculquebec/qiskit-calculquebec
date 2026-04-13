@@ -8,8 +8,12 @@ pas modifier le circuit après le folding de bruit.
 """
 
 
-from qiskit.transpiler.preset_passmanagers import generate_preset_pass_manager
-from qiskit_ibm_runtime import SamplerV2
+try:
+    from qiskit.transpiler.preset_passmanagers import generate_preset_pass_manager
+    from qiskit_ibm_runtime import SamplerV2
+except ImportError:
+    generate_preset_pass_manager = None  # type: ignore[assignment]
+    SamplerV2 = None  # type: ignore[assignment,misc]
 
 
 def _require_mitiq_zne():
