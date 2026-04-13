@@ -24,3 +24,61 @@ exclude_patterns = ["_build", "Thumbs.db", ".DS_Store"]
 
 html_theme = "alabaster"
 html_static_path = ["_static"]
+
+extensions = [
+    "sphinx.ext.autodoc",
+    "sphinx.ext.napoleon",
+    "sphinx.ext.apidoc",
+    "sphinx.ext.autosummary",
+    "myst_parser",
+]
+
+apidoc_modules = [
+    {
+        "path": "../qiskit_calculquebec",
+        "destination": "rtd/code_ref/",
+        "exclude_patterns": ["**/test*"],
+        "max_depth": 3,
+        "follow_links": False,
+        "separate_modules": True,
+        "include_private": False,
+        "no_headings": False,
+        "module_first": False,
+        "implicit_namespaces": False,
+        "automodule_options": {
+            "members",
+            "show-inheritance",
+        },
+    },
+]
+
+# Autodoc and Autosummary configuration
+autodoc_default_options = {
+    "members": True,
+    "show-inheritance": True,
+    "special-members": "__init__",
+}
+# Include both class docstring and __init__ docstring
+autoclass_content = "both"
+autosummary_generate = True
+
+templates_path = ["_templates"]
+exclude_patterns = [
+    "_build",
+    "Thumbs.db",
+    ".DS_Store",
+    "**/*.md",
+]
+
+
+language = "en"
+
+# -- Options for HTML output -------------------------------------------------
+# https://www.sphinx-doc.org/en/master/usage/configuration.html#options-for-html-output
+
+html_static_path = ["_static"]
+html_theme = "sphinx_book_theme"
+html_theme_options = {
+    "repository_url": "https://github.com/calculquebec/qiskit-calculquebec",
+    "use_repository_button": True,
+}

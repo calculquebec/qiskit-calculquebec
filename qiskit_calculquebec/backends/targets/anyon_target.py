@@ -57,18 +57,19 @@ class AnyonTarget(Target, ABC):
     Example:
         Example of a concrete device target:
 
-        ```python
-        class Yukon(AnyonTarget):
+        .. code-block:: python
 
-            def coupling_map(self):
-                return [(0, 1), (1, 0), (1, 2), (2, 1)]
+            class Yukon(AnyonTarget):
 
-            def qubits(self):
-                return list(range(6))
+                def coupling_map(self):
+                    return [(0, 1), (1, 0), (1, 2), (2, 1)]
 
-            def device_name(self):
-                return "Yukon"
-        ```
+                def qubits(self):
+                    return list(range(6))
+
+                def device_name(self):
+                    return "Yukon"
+            ...
     """
 
     @abstractmethod
