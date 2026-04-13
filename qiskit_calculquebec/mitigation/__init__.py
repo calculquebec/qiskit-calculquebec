@@ -1,16 +1,16 @@
 """
 qiskit_calculquebec.mitigation
 ================================
-Techniques de mitigation d'erreurs pour MonarQ.
+Error mitigation techniques for MonarQ.
 
-Classes disponibles
--------------------
+Available classes
+-----------------
 ReadoutMitigation
-    Mitigation des erreurs de lecture (REM).
-    Deux modes :
-      - ``method='matrix'``  : matrice de confusion inverse (mitiq), exacte mais
-                               limitée à ~12 qubits (mémoire 2ⁿ × 2ⁿ).
-      - ``method='m3'``      : M3 (mthree), scalable jusqu'à 24 qubits et au-delà.
+    Readout Error Mitigation (REM).
+    Two modes:
+      - ``method='matrix'`` : inverse confusion matrix (mitiq), exact but
+                              limited to ~12 qubits (2ⁿ × 2ⁿ memory).
+      - ``method='m3'``     : M3 (mthree), scalable to 24 qubits and beyond.
 
 ZNEMitigation
     Zero-Noise Extrapolation via mitiq.
@@ -21,8 +21,8 @@ DDDMitigation
 PauliTwirlingMitigation
     Pauli Twirling (± ZNE) via mitiq.
 
-Installation des dépendances optionnelles
------------------------------------------
+Installing optional dependencies
+---------------------------------
     pip install qiskit-calculquebec[mitigation]
 """
 
@@ -33,21 +33,21 @@ def _check_optional_deps():
     try:
         import mitiq  # noqa: F401
     except ImportError:
-        missing.append("mitiq  (requis pour ZNEMitigation, DDDMitigation, PauliTwirlingMitigation, ReadoutMitigation(method='matrix'))")
+        missing.append("mitiq  (required for ZNEMitigation, DDDMitigation, PauliTwirlingMitigation, ReadoutMitigation(method='matrix'))")
     try:
         import mthree  # noqa: F401
     except ImportError:
-        missing.append("mthree (requis pour ReadoutMitigation(method='m3'))")
+        missing.append("mthree (required for ReadoutMitigation(method='m3'))")
     try:
         import psutil  # noqa: F401
     except ImportError:
-        missing.append("psutil (requis pour ReadoutMitigation(method='m3'))")
+        missing.append("psutil (required for ReadoutMitigation(method='m3'))")
 
     if missing:
         _warnings.warn(
-            "Dépendances optionnelles manquantes pour qiskit-calculquebec[mitigation] :\n"
+            "Missing optional dependencies for qiskit-calculquebec[mitigation]:\n"
             + "\n".join(f"  - {m}" for m in missing)
-            + "\nInstallez-les avec : pip install qiskit-calculquebec[mitigation]",
+            + "\nInstall them with: pip install qiskit-calculquebec[mitigation]",
             UserWarning,
             stacklevel=2,
         )

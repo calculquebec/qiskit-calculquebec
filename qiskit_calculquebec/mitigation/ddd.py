@@ -1,14 +1,14 @@
 """
-Digital Dynamical Decoupling (DDD) pour MonarQ
-===============================================
+Digital Dynamical Decoupling (DDD) for MonarQ
+==============================================
 
-Insère des séquences de portes dans les fenêtres inactives (idle windows)
-du circuit pour découpler les qubits du bruit de déphasing.
+Inserts pulse sequences into idle windows of the circuit to decouple
+qubits from dephasing noise.
 
-Règles disponibles (mitiq.ddd.rules) :
-  - ``'xx'``   : séquence X-X
-  - ``'yy'``   : séquence Y-Y
-  - ``'xyxy'`` : séquence X-Y-X-Y (recommandée en général)
+Available rules (mitiq.ddd.rules):
+  - ``'xx'``   : X-X sequence
+  - ``'yy'``   : Y-Y sequence
+  - ``'xyxy'`` : X-Y-X-Y sequence (recommended in general)
 """
 
 
@@ -30,52 +30,59 @@ def _require_mitiq_ddd():
         return execute_with_ddd, {"xx": xx, "yy": yy, "xyxy": xyxy}
     except ImportError:
         raise ImportError(
-            "mitiq est requis pour DDDMitigation.\n"
-            "Installez-le avec : pip install mitiq\n"
-            "ou : pip install qiskit-calculquebec[mitigation]"
+            "mitiq is required for DDDMitigation.\n"
+            "Install it with: pip install mitiq\n"
+            "or: pip install qiskit-calculquebec[mitigation]"
         )
 
 
 class DDDMitigation:
     """
-    Digital Dynamical Decoupling (DDD) pour MonarQ.
+    Digital Dynamical Decoupling (DDD) for MonarQ.
+
+    Inserts decoupling gate sequences into idle windows to suppress
+    dephasing noise. Results are averaged over ``num_trials`` randomized
+    placements.
 
     Parameters
     ----------
     backend : MonarQBackend
-        Backend Calcul Québec.
+        Calcul Québec backend.
     rule : str
-        Règle DDD : ``'xx'``, ``'yy'`` ou ``'xyxy'`` (défaut).
+        DDD rule: ``'xx'``, ``'yy'``, or ``'xyxy'`` (default).
     num_trials : int
-        Nombre de répétitions pour moyenner le stochastique du placement,
-        défaut 3.
+        Number of repetitions to average over the stochastic placement.
+        Default: 3.
     shots : int
-        Shots par circuit, défaut 1024.
+        Shots per circuit. Default: 1024.
 
     Examples
     --------
-    Observable par défaut — P(|0…0⟩) :
+    Default observable — P(|0…0⟩):
 
     >>> ddd = DDDMitigation(backend, rule='xyxy')
     >>> result = ddd.run(circuit)
-    >>> print(f"Brut : {ddd.run_unmitigated(circuit):.4f}  DDD : {result:.4f}")
+    >>> print(f"Raw: {ddd.run_unmitigated(circuit):.4f}  DDD: {result:.4f}")
 
-    Observable Pauli quelconque :
+    Arbitrary Pauli observable:
 
     >>> from mitiq import Observable, PauliString
-    >>> obs = Observable(PauliString("ZZ", support=[0, 1]))  # ⟨Z₀Z₁⟩
+    >>> obs = Observable(PauliString("ZZ", support=[0, 1]))  # <Z0 Z1>
     >>> result = ddd.run(circuit, observable=obs)
 
-    Combinaison DDD + REM :
+    DDD combined with REM:
 
     >>> rem = ReadoutMitigation(backend, method='m3')
     >>> rem.cals_from_system()
-    >>> # qubits doit être dérivé avec optimization_level=0 — le même niveau
-    >>> # qu'utilise l'executor DDD en interne — pour que REM corrige
-    >>> # les bons qubits physiques.
+    >>> # qubits must be derived with optimization_level=0 — the same level
+    >>> # used by the DDD executor — so REM corrects the right physical qubits.
     >>> pm = generate_preset_pass_manager(optimization_level=0, backend=backend)
     >>> t = pm.run(circuit)
-    >>> physical_qubits = [t.layout.final_layout[q] for q in t.qubits] if t.layout and t.layout.final_layout else list(range(circuit.num_qubits))
+    >>> physical_qubits = (
+    ...     [t.layout.final_layout[q] for q in t.qubits]
+    ...     if t.layout and t.layout.final_layout
+    ...     else list(range(circuit.num_qubits))
+    ... )
     >>> ddd = DDDMitigation(backend, rule='xyxy')
     >>> result = ddd.run(circuit, rem=rem, qubits=physical_qubits)
     """
@@ -88,7 +95,7 @@ class DDDMitigation:
         shots: int = 1024,
     ):
         if rule not in _VALID_RULES:
-            raise ValueError(f"rule doit être parmi {_VALID_RULES}, pas {rule!r}.")
+            raise ValueError(f"rule must be one of {_VALID_RULES}, got {rule!r}.")
         self.backend = backend
         self.rule = rule
         self.num_trials = num_trials
@@ -98,22 +105,22 @@ class DDDMitigation:
 
     def _make_executor(self, rem=None, qubits=None, observable=None):
         """
-        Retourne un executor compatible mitiq.ddd.
+        Build a mitiq-compatible executor for this backend.
 
-        Deux modes selon ``observable`` :
+        Two modes depending on ``observable``:
 
-        - ``observable=None`` : retourne ``float`` — P(|0…0⟩).
-        - ``observable`` fourni : retourne ``MeasurementResult`` (bitstrings bruts) ;
-          mitiq calcule lui-même l'espérance via l'observable.
+        - ``observable=None``: returns ``float`` — P(|0…0⟩).
+        - ``observable`` provided: returns ``MeasurementResult`` (raw bitstrings);
+          mitiq computes the expectation value internally.
 
         Parameters
         ----------
         rem : ReadoutMitigation | None
-            Si fourni, la correction REM est appliquée dans l'executor.
+            If provided, REM correction is applied inside the executor.
         qubits : list[int] | None
-            Qubits physiques, requis si rem est fourni.
+            Physical qubits; required when ``rem`` is provided.
         observable : mitiq.Observable | None
-            Si fourni, l'executor retourne MeasurementResult au lieu de float.
+            If provided, the executor returns ``MeasurementResult`` instead of ``float``.
         """
         backend = self.backend
         shots = self.shots
@@ -133,10 +140,11 @@ class DDDMitigation:
                     transpiled = [transpiled]
                 sampler = SamplerV2(mode=backend)
                 counts = sampler.run(transpiled, shots=shots).result()[0].join_data().get_counts()
+                # Normalize multi-register keys (e.g. "0 0" → "00")
                 counts = {"".join(k.split()): v for k, v in counts.items()}
 
                 if rem is not None and qubits is None:
-                    raise ValueError("qubits est requis quand rem est fourni.")
+                    raise ValueError("qubits is required when rem is provided.")
 
                 if rem is not None:
                     if rem.method == "matrix":
@@ -156,7 +164,7 @@ class DDDMitigation:
 
         else:
             def executor(circuit):
-                # Mitiq peut passer un circuit sans mesures (après insertion DDD)
+                # mitiq may pass a circuit without measurements after DDD insertion — re-add them
                 circ = circuit.copy()
                 if circ.num_clbits == 0:
                     circ.measure_all()
@@ -167,11 +175,12 @@ class DDDMitigation:
                     transpiled = [transpiled]
                 sampler = SamplerV2(mode=backend)
                 counts = sampler.run(transpiled, shots=shots).result()[0].join_data().get_counts()
+                # Normalize multi-register keys (e.g. "0 0" → "00")
                 counts = {"".join(k.split()): v for k, v in counts.items()}
                 n = circuit.num_qubits
 
                 if rem is not None and qubits is None:
-                    raise ValueError("qubits est requis quand rem est fourni.")
+                    raise ValueError("qubits is required when rem is provided.")
 
                 if rem is not None:
                     if rem.method == "matrix":
@@ -188,23 +197,29 @@ class DDDMitigation:
 
     def run(self, circuit, observable=None, rem=None, qubits=None) -> float:
         """
-        Exécute le circuit avec DDD.
+        Run the circuit with DDD and return the mitigated value.
+
+        Measurements are stripped before passing to mitiq in both modes:
+        - observable mode: mitiq adds its own measurements via ``observable.measure_in()``.
+        - float mode: the executor re-adds measurements via ``measure_all()`` if absent.
 
         Parameters
         ----------
         circuit : QuantumCircuit
+            Circuit to execute. Measurements are handled internally by mitiq.
         observable : mitiq.Observable | None
-            Observable Pauli à mesurer. ``None`` → P(|0…0⟩).
-            Exemple : ``Observable(PauliString("ZZ", support=[0, 1]))``
+            Pauli observable to measure. ``None`` → P(|0…0⟩).
+            Example: ``Observable(PauliString("ZZ", support=[0, 1]))``
         rem : ReadoutMitigation | None
-            Optionnel : applique aussi une correction REM dans l'executor.
+            Optional REM correction applied inside the executor.
         qubits : list[int] | None
-            Qubits physiques, requis si ``rem`` est fourni.
+            Physical qubits; required when ``rem`` is provided.
 
         Returns
         -------
         float
-            ⟨observable⟩ mitigé (moyenne sur ``num_trials``) ou P(|0…0⟩) si observable=None.
+            Mitigated ⟨observable⟩ (averaged over ``num_trials``), or P(|0…0⟩)
+            if ``observable`` is None.
         """
         execute_with_ddd, rules = _require_mitiq_ddd()
         executor = self._make_executor(rem=rem, qubits=qubits, observable=observable)
@@ -213,11 +228,6 @@ class DDDMitigation:
         if observable is not None:
             kwargs["observable"] = observable
 
-        # Supprimer les mesures dans les deux modes :
-        # - mode observable : mitiq ajoute ses propres mesures via observable.measure_in()
-        # - mode float      : l'executor les réinsère via measure_all() si absent
-        # Cela permet aussi à mitiq d'évaluer correctement la longueur du circuit
-        # (ex. avertissement "circuit very short").
         circuit = circuit.remove_final_measurements(inplace=False)
 
         result = execute_with_ddd(
@@ -231,21 +241,23 @@ class DDDMitigation:
 
     def run_unmitigated(self, circuit, observable=None, rem=None, qubits=None) -> float:
         """
-        Exécute le circuit **sans** DDD pour comparaison.
+        Run the circuit without DDD for baseline comparison.
 
         Parameters
         ----------
+        circuit : QuantumCircuit
+            Circuit to execute.
         observable : mitiq.Observable | None
-            Observable Pauli à mesurer. ``None`` → P(|0…0⟩).
+            Pauli observable to measure. ``None`` → P(|0…0⟩).
         rem : ReadoutMitigation | None
-            Optionnel : applique aussi une correction REM.
+            Optional REM correction applied inside the executor.
         qubits : list[int] | None
-            Qubits physiques, requis si ``rem`` est fourni.
+            Physical qubits; required when ``rem`` is provided.
 
         Returns
         -------
         float
-            ⟨observable⟩ brut ou P(|0…0⟩) si observable=None.
+            Raw ⟨observable⟩, or P(|0…0⟩) if ``observable`` is None.
         """
         executor = self._make_executor(rem=rem, qubits=qubits, observable=observable)
         if observable is not None:
