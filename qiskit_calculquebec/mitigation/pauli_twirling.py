@@ -22,6 +22,7 @@ except ImportError:
 def _require_mitiq_pt():
     try:
         from mitiq.pt import generate_pauli_twirl_variants
+
         return generate_pauli_twirl_variants
     except ImportError:
         raise ImportError(
@@ -34,6 +35,7 @@ def _require_mitiq_pt():
 def _require_mitiq_zne():
     try:
         from mitiq import zne
+
         return zne
     except ImportError:
         raise ImportError(
@@ -110,7 +112,12 @@ class PauliTwirlingMitigation:
             if not isinstance(transpiled, list):
                 transpiled = [transpiled]
             sampler = SamplerV2(mode=backend)
-            counts = sampler.run(transpiled, shots=shots).result()[0].join_data().get_counts()
+            counts = (
+                sampler.run(transpiled, shots=shots)
+                .result()[0]
+                .join_data()
+                .get_counts()
+            )
             # Normalize multi-register keys (e.g. "0 0" → "00")
             counts = {"".join(k.split()): v for k, v in counts.items()}
             n = circuit.num_qubits
@@ -258,5 +265,7 @@ class PauliTwirlingMitigation:
         """
         generate_pauli_twirl_variants = _require_mitiq_pt()
         base_executor = self._make_base_executor(rem=rem, qubits=qubits)
-        variants = generate_pauli_twirl_variants(circuit, num_circuits=self.num_variants)
+        variants = generate_pauli_twirl_variants(
+            circuit, num_circuits=self.num_variants
+        )
         return [base_executor(v) for v in variants]
