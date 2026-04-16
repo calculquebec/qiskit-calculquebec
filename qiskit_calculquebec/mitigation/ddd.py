@@ -11,7 +11,6 @@ Available rules (mitiq.ddd.rules):
   - ``'xyxy'`` : X-Y-X-Y sequence (recommended in general)
 """
 
-
 try:
     from qiskit.transpiler.preset_passmanagers import generate_preset_pass_manager
     from qiskit_ibm_runtime import SamplerV2
@@ -27,6 +26,7 @@ def _require_mitiq_ddd():
     try:
         from mitiq.ddd import execute_with_ddd
         from mitiq.ddd.rules import xx, yy, xyxy
+
         return execute_with_ddd, {"xx": xx, "yy": yy, "xyxy": xyxy}
     except ImportError:
         raise ImportError(
@@ -128,7 +128,12 @@ class DDDMitigation:
                 if not isinstance(transpiled, list):
                     transpiled = [transpiled]
                 sampler = SamplerV2(mode=backend)
-                counts = sampler.run(transpiled, shots=shots).result()[0].join_data().get_counts()
+                counts = (
+                    sampler.run(transpiled, shots=shots)
+                    .result()[0]
+                    .join_data()
+                    .get_counts()
+                )
                 # Normalize multi-register keys (e.g. "0 0" → "00")
                 counts = {"".join(k.split()): v for k, v in counts.items()}
 
@@ -152,6 +157,7 @@ class DDDMitigation:
                 return MeasurementResult(np.array(bitstrings, dtype=int))
 
         else:
+
             def executor(circuit):
                 # mitiq may pass a circuit without measurements after DDD insertion — re-add them
                 circ = circuit.copy()
@@ -163,7 +169,12 @@ class DDDMitigation:
                 if not isinstance(transpiled, list):
                     transpiled = [transpiled]
                 sampler = SamplerV2(mode=backend)
-                counts = sampler.run(transpiled, shots=shots).result()[0].join_data().get_counts()
+                counts = (
+                    sampler.run(transpiled, shots=shots)
+                    .result()[0]
+                    .join_data()
+                    .get_counts()
+                )
                 # Normalize multi-register keys (e.g. "0 0" → "00")
                 counts = {"".join(k.split()): v for k, v in counts.items()}
                 n = circuit.num_qubits

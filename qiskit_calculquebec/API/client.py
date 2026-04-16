@@ -11,6 +11,7 @@ class ProjectParameterError(ValueError):
 
     Either ``project_name`` or ``project_id`` must be provided, but not both.
     """
+
     pass
 
 
@@ -165,6 +166,7 @@ class MonarqClient(CalculQuebecClient):
             circuit_name,
         )
         import warnings
+
         warnings.warn(
             "MonarqClient is deprecated and will be removed in a future release. "
             "Use CalculQuebecClient instead.",
