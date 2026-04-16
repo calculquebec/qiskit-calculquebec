@@ -100,9 +100,7 @@ class Job:
             if status == "SUCCEEDED":
                 return content["result"]["histogram"]
 
-        raise JobException(
-            f"Job did not complete. Last status: {current_status}"
-        )
+        raise JobException(f"Job did not complete. Last status: {current_status}")
 
     def raise_api_error(self, response):
         """Parse an API error response and raise a ``JobException``.
