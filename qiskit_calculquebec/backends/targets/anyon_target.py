@@ -1,3 +1,11 @@
+"""
+Abstract hardware target for Anyon quantum devices (MonarQ, Yukon).
+
+Provides the base ``AnyonTarget`` class that loads calibration data,
+defines the supported gate set, and registers instruction properties.
+Concrete targets (``MonarQ``, ``Yukon``) supply the topology.
+"""
+
 from qiskit.transpiler.target import Target
 from qiskit.circuit.library import (
     IGate,
@@ -23,6 +31,7 @@ from qiskit_calculquebec.custom_gates.ry_m90_gate import RYm90Gate
 
 from abc import ABC, abstractmethod
 
+#: Hardware clock period in seconds (32 ns per cycle on Anyon devices).
 DT = 32e-9
 
 
@@ -34,11 +43,12 @@ class AnyonTarget(Target, ABC):
     such as Yukon or MonarQ.
 
     The target defines:
-        * The physical qubits available on the device
-        * The device coupling map
-        * The supported gate set
-        * Gate durations and error rates
-        * Measurement operations
+
+    * The physical qubits available on the device
+    * The device coupling map
+    * The supported gate set
+    * Gate durations and error rates
+    * Measurement operations
 
     Hardware calibration data (gate errors, measurement errors, and coherence
     times) are optionally retrieved through
@@ -69,7 +79,10 @@ class AnyonTarget(Target, ABC):
 
                 def device_name(self):
                     return "Yukon"
+<<<<<<< HEAD
             ...
+=======
+>>>>>>> 07572de34a34dd9bf7983e36a48840d354bb88de
     """
 
     @abstractmethod
@@ -105,11 +118,12 @@ class AnyonTarget(Target, ABC):
         """Initialize the hardware target.
 
         This constructor:
-            * Initializes the Qiskit ``Target``
-            * Loads qubit properties
-            * Defines the default gate set
-            * Registers supported instructions with their associated
-              duration and error rates
+
+        * Initializes the Qiskit ``Target``
+        * Loads qubit properties
+        * Defines the default gate set
+        * Registers supported instructions with their associated duration and
+          error rates
         """
         super().__init__()
         self.dt = DT

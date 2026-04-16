@@ -20,17 +20,17 @@ class MonarQ(AnyonTarget):
     Example:
         Instantiate the target:
 
-        ```python
-        target = MonarQ()
-        ```
+        .. code-block:: python
+
+            target = MonarQ()
 
         Access device metadata:
 
-        ```python
-        print(target.name)
-        print(list(target.qubits))
-        print(target.coupling_map)
-        ```
+        .. code-block:: python
+
+            print(target.name)
+            print(list(target.qubits))
+            print(target.coupling_map)
     """
 
     def coupling_map(self):
@@ -40,8 +40,8 @@ class MonarQ(AnyonTarget):
         the physical qubits of the MonarQ processor.
 
         Returns:
-            list[tuple[int, int]]: Directed qubit connections describing
-            the hardware connectivity graph.
+            list[tuple[int, int]]: Directed qubit connections describing the
+                hardware connectivity graph.
         """
         return [
             (0, 4),
