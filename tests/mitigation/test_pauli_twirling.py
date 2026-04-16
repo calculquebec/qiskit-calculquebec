@@ -208,7 +208,7 @@ def test_run_raises_rem_without_qubits(backend, circuit, mock_sampler_counts):
     pt = PauliTwirlingMitigation(backend)
     with patch("mitiq.pt.generate_pauli_twirl_variants") as mock_variants:
         mock_variants.return_value = [circuit]
-        with pytest.raises(ValueError, match="qubits est requis"):
+        with pytest.raises(ValueError, match="qubits is required when rem is provided"):
             pt.run(circuit, rem=rem)
 
 

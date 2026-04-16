@@ -42,7 +42,7 @@ def rem_m3(backend):
 # ── Constructor ───────────────────────────────────────────────────────────────
 
 def test_invalid_method(backend):
-    with pytest.raises(ValueError, match="method doit être"):
+    with pytest.raises(ValueError, match="method must be"):
         ReadoutMitigation(backend, method="invalid")
 
 
@@ -55,7 +55,7 @@ def test_valid_methods(backend):
 
 def test_cals_from_matrices_wrong_length(backend):
     rem = ReadoutMitigation(backend, method="matrix")
-    with pytest.raises(ValueError, match="Longueur"):
+    with pytest.raises(ValueError, match=r"List length"):
         rem.cals_from_matrices([np.eye(2)])  # only 1, needs 3
 
 
@@ -88,8 +88,7 @@ def test_cals_from_system(backend):
 
 def test_readout_fidelity_not_calibrated(backend):
     rem = ReadoutMitigation(backend, method="matrix")
-    with pytest.raises(RuntimeError, match="non calibré"):
-        rem.readout_fidelity()
+    with pytest.raises(RuntimeError, match="not calibrated"):
 
 
 def test_readout_fidelity_values(rem_matrix):
@@ -105,7 +104,7 @@ def test_readout_fidelity_values(rem_matrix):
 
 def test_apply_correction_not_calibrated(backend):
     rem = ReadoutMitigation(backend, method="matrix")
-    with pytest.raises(RuntimeError, match="non calibré"):
+    with pytest.raises(RuntimeError, match="not calibrated"):
         rem.apply_correction({"000": 500, "111": 500}, qubits=[0, 1, 2])
 
 
@@ -116,7 +115,7 @@ def test_apply_correction_missing_qubit(backend):
         None,  # qubit 1 not calibrated
         np.array([[0.98, 0.04], [0.02, 0.96]]),
     ])
-    with pytest.raises(RuntimeError, match="non calibrés"):
+    with pytest.raises(RuntimeError, match="Uncalibrated qubits"):
         rem.apply_correction({"000": 500}, qubits=[0, 1, 2])
 
 

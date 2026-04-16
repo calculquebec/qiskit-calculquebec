@@ -47,7 +47,7 @@ def mock_sampler_counts():
 # ── Constructor ───────────────────────────────────────────────────────────────
 
 def test_invalid_rule(backend):
-    with pytest.raises(ValueError, match="rule doit être"):
+    with pytest.raises(ValueError, match="rule must be one of"):
         DDDMitigation(backend, rule="invalid")
 
 
@@ -160,7 +160,7 @@ def test_run_unmitigated_raises_rem_without_qubits(backend, idle_circuit, mock_s
     rem = MagicMock()
     rem.method = "m3"
     ddd = DDDMitigation(backend)
-    with pytest.raises(ValueError, match="qubits est requis"):
+    with pytest.raises(ValueError, match="qubits is required when rem is provided"):
         ddd.run_unmitigated(idle_circuit, rem=rem)
 
 

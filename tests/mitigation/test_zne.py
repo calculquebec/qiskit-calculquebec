@@ -175,7 +175,7 @@ def test_run_unmitigated_raises_if_rem_without_qubits(backend, ghz, mock_sampler
     rem = MagicMock()
     rem.method = "m3"
     zne = ZNEMitigation(backend)
-    with pytest.raises(ValueError, match="qubits est requis"):
+    with pytest.raises(ValueError, match="qubits is required when rem is provided"):
         zne.run_unmitigated(ghz, rem=rem)
 
 
