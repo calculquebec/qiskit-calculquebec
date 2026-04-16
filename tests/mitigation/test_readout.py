@@ -4,10 +4,13 @@ import numpy as np
 import pytest
 from unittest.mock import MagicMock, patch
 
-from qiskit_calculquebec.mitigation.readout import ReadoutMitigation, _faulty_qubit_checker
-
+from qiskit_calculquebec.mitigation.readout import (
+    ReadoutMitigation,
+    _faulty_qubit_checker,
+)
 
 # ── Fixtures ──────────────────────────────────────────────────────────────────
+
 
 @pytest.fixture
 def backend():
@@ -20,26 +23,31 @@ def backend():
 @pytest.fixture
 def rem_matrix(backend):
     rem = ReadoutMitigation(backend, method="matrix")
-    rem.cals_from_matrices([
-        np.array([[0.97, 0.05], [0.03, 0.95]]),
-        np.array([[0.96, 0.06], [0.04, 0.94]]),
-        np.array([[0.98, 0.04], [0.02, 0.96]]),
-    ])
+    rem.cals_from_matrices(
+        [
+            np.array([[0.97, 0.05], [0.03, 0.95]]),
+            np.array([[0.96, 0.06], [0.04, 0.94]]),
+            np.array([[0.98, 0.04], [0.02, 0.96]]),
+        ]
+    )
     return rem
 
 
 @pytest.fixture
 def rem_m3(backend):
     rem = ReadoutMitigation(backend, method="m3")
-    rem.cals_from_matrices([
-        np.array([[0.97, 0.05], [0.03, 0.95]]),
-        np.array([[0.96, 0.06], [0.04, 0.94]]),
-        np.array([[0.98, 0.04], [0.02, 0.96]]),
-    ])
+    rem.cals_from_matrices(
+        [
+            np.array([[0.97, 0.05], [0.03, 0.95]]),
+            np.array([[0.96, 0.06], [0.04, 0.94]]),
+            np.array([[0.98, 0.04], [0.02, 0.96]]),
+        ]
+    )
     return rem
 
 
 # ── Constructor ───────────────────────────────────────────────────────────────
+
 
 def test_invalid_method(backend):
     with pytest.raises(ValueError, match="method must be"):
@@ -52,6 +60,7 @@ def test_valid_methods(backend):
 
 
 # ── Calibration ───────────────────────────────────────────────────────────────
+
 
 def test_cals_from_matrices_wrong_length(backend):
     rem = ReadoutMitigation(backend, method="matrix")
@@ -70,13 +79,25 @@ def test_cals_from_system(backend):
     benchmark_data = {
         "resultsPerDevice": {
             "qubits": {
-                "0": {"parallelReadoutState0Fidelity": 0.97, "parallelReadoutState1Fidelity": 0.95},
-                "1": {"parallelReadoutState0Fidelity": 0.96, "parallelReadoutState1Fidelity": 0.94},
-                "2": {"parallelReadoutState0Fidelity": 0.98, "parallelReadoutState1Fidelity": 0.96},
+                "0": {
+                    "parallelReadoutState0Fidelity": 0.97,
+                    "parallelReadoutState1Fidelity": 0.95,
+                },
+                "1": {
+                    "parallelReadoutState0Fidelity": 0.96,
+                    "parallelReadoutState1Fidelity": 0.94,
+                },
+                "2": {
+                    "parallelReadoutState0Fidelity": 0.98,
+                    "parallelReadoutState1Fidelity": 0.96,
+                },
             }
         }
     }
-    with patch("qiskit_calculquebec.API.adapter.ApiAdapter.get_benchmark", return_value=benchmark_data):
+    with patch(
+        "qiskit_calculquebec.API.adapter.ApiAdapter.get_benchmark",
+        return_value=benchmark_data,
+    ):
         rem.cals_from_system()
     assert rem.single_qubit_cals is not None
     assert rem.cal_timestamp is not None
@@ -85,6 +106,7 @@ def test_cals_from_system(backend):
 
 
 # ── Readout fidelity ──────────────────────────────────────────────────────────
+
 
 def test_readout_fidelity_not_calibrated(backend):
     rem = ReadoutMitigation(backend, method="matrix")
@@ -103,6 +125,7 @@ def test_readout_fidelity_values(rem_matrix):
 
 # ── apply_correction (matrix) ─────────────────────────────────────────────────
 
+
 def test_apply_correction_not_calibrated(backend):
     rem = ReadoutMitigation(backend, method="matrix")
     with pytest.raises(RuntimeError, match="not calibrated"):
@@ -111,11 +134,13 @@ def test_apply_correction_not_calibrated(backend):
 
 def test_apply_correction_missing_qubit(backend):
     rem = ReadoutMitigation(backend, method="matrix")
-    rem.cals_from_matrices([
-        np.array([[0.97, 0.05], [0.03, 0.95]]),
-        None,  # qubit 1 not calibrated
-        np.array([[0.98, 0.04], [0.02, 0.96]]),
-    ])
+    rem.cals_from_matrices(
+        [
+            np.array([[0.97, 0.05], [0.03, 0.95]]),
+            None,  # qubit 1 not calibrated
+            np.array([[0.98, 0.04], [0.02, 0.96]]),
+        ]
+    )
     with pytest.raises(RuntimeError, match="Uncalibrated qubits"):
         rem.apply_correction({"000": 500}, qubits=[0, 1, 2])
 
@@ -130,7 +155,15 @@ def test_apply_correction_matrix_returns_dict(rem_matrix):
 
 def test_apply_correction_matrix_improves_ghz(rem_matrix):
     """Correction should push 000 and 111 closer to equal counts."""
-    counts = {"000": 420, "111": 420, "001": 40, "010": 30, "100": 40, "011": 30, "101": 20}
+    counts = {
+        "000": 420,
+        "111": 420,
+        "001": 40,
+        "010": 30,
+        "100": 40,
+        "011": 30,
+        "101": 20,
+    }
     corrected = rem_matrix.apply_correction(counts, qubits=[0, 1, 2])
     total = sum(corrected.values())
     assert total > 0
@@ -142,6 +175,7 @@ def test_apply_correction_matrix_improves_ghz(rem_matrix):
 
 
 # ── confusion matrix helpers ──────────────────────────────────────────────────
+
 
 def test_get_confusion_matrix_shape(rem_matrix):
     mat = rem_matrix.get_confusion_matrix([0, 1, 2])
@@ -160,6 +194,7 @@ def test_get_confusion_matrix_not_calibrated(backend):
 
 
 # ── faulty qubit detection ────────────────────────────────────────────────────
+
 
 def test_faulty_qubit_checker_normal():
     cals = [
