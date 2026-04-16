@@ -19,8 +19,8 @@ requires = ["setuptools>=80", "setuptools-scm>=8"]
 build-backend = "setuptools.build_meta"
 
 [project.optional-dependencies]
-test = ["pytest", "pytest-mock"]
-mitigation = ["mitiq>=1.0", "mthree", "psutil"]
+test = ["pytest", "pytest-mock", "mitiq>=1.0", "mthree", "psutil", "ply"]
+mitigation = ["mitiq>=1.0", "mthree", "psutil", "ply"]
 
 [tool.setuptools]
 packages = [
