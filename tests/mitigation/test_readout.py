@@ -89,6 +89,7 @@ def test_cals_from_system(backend):
 def test_readout_fidelity_not_calibrated(backend):
     rem = ReadoutMitigation(backend, method="matrix")
     with pytest.raises(RuntimeError, match="not calibrated"):
+        rem.readout_fidelity()
 
 
 def test_readout_fidelity_values(rem_matrix):
