@@ -4,8 +4,7 @@ from qiskit.circuit.equivalence_library import SessionEquivalenceLibrary
 
 
 class RY90Gate(Gate):
-    """
-    Custom single-qubit gate representing RY(π/2).
+    """Custom single-qubit gate representing RY(π/2).
 
     Useful for backends with a native RY90 gate or for simplifying transpilation.
     """
@@ -15,8 +14,8 @@ class RY90Gate(Gate):
         super().__init__("ry90", 1, [])
 
     def _define(self):
-        """
-        Decompose this gate in terms of standard Qiskit gates.
+        """Decompose this gate in terms of standard Qiskit gates.
+
         Here, it is a single RY rotation by π/2.
         """
         qc = QuantumCircuit(1, name=self.name)

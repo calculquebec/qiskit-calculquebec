@@ -10,9 +10,13 @@ def retry(
     """A decorator to retry a function call with exponential backoff.
 
     Args:
-        retries (int): The maximum number of retries before giving up. Default is 10.
-        initial_delay (float): The initial delay in seconds before the first retry. Default is 0.1 seconds.
-        backoff_factor (float): The factor by which the delay increases after each retry. Default is 2.0.
+        retries (int): The maximum number of retries before giving up.
+            Default: 10.
+        initial_delay (float): The initial delay in seconds before the first
+            retry. Default: 0.1.
+        backoff_factor (float): The factor by which the delay increases after
+            each retry. Default: 2.0.
+
     Returns:
         function: The decorated function that will be retried on failure.
     """
