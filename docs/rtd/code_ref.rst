@@ -12,4 +12,5 @@ This section contains the API reference for the ``qiskit_calculquebec`` package.
     API
     backends
     custom_gates
+    mitigation
     provider
