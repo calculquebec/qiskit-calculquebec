@@ -38,51 +38,51 @@ DT = 32e-9
 class AnyonTarget(Target, ABC):
     """Abstract base class describing a quantum hardware target for Anyon devices.
 
-    This class extends ``qiskit.transpiler.Target`` and provides a common
-    interface for defining the characteristics of Anyon-based quantum devices,
-    such as Yukon or MonarQ.
+        This class extends ``qiskit.transpiler.Target`` and provides a common
+        interface for defining the characteristics of Anyon-based quantum devices,
+        such as Yukon or MonarQ.
 
-    The target defines:
+        The target defines:
 
-    * The physical qubits available on the device
-    * The device coupling map
-    * The supported gate set
-    * Gate durations and error rates
-    * Measurement operations
+        * The physical qubits available on the device
+        * The device coupling map
+        * The supported gate set
+        * Gate durations and error rates
+        * Measurement operations
 
-    Hardware calibration data (gate errors, measurement errors, and coherence
-    times) are optionally retrieved through
-    ``qiskit_calculquebec.API.adapter.ApiAdapter``.
+        Hardware calibration data (gate errors, measurement errors, and coherence
+        times) are optionally retrieved through
+        ``qiskit_calculquebec.API.adapter.ApiAdapter``.
 
-    Subclasses must implement methods describing the hardware topology.
+        Subclasses must implement methods describing the hardware topology.
 
-    Note:
-        This class is abstract and cannot be instantiated directly. Concrete
-        subclasses must implement:
+        Note:
+            This class is abstract and cannot be instantiated directly. Concrete
+            subclasses must implement:
 
-        * ``coupling_map()``
-        * ``qubits()``
-        * ``device_name()``
+            * ``coupling_map()``
+            * ``qubits()``
+            * ``device_name()``
 
-    Example:
-        Example of a concrete device target:
+        Example:
+            Example of a concrete device target:
 
-        .. code-block:: python
+            .. code-block:: python
 
-            class Yukon(AnyonTarget):
+                class Yukon(AnyonTarget):
 
-                def coupling_map(self):
-                    return [(0, 1), (1, 0), (1, 2), (2, 1)]
+                    def coupling_map(self):
+                        return [(0, 1), (1, 0), (1, 2), (2, 1)]
 
-                def qubits(self):
-                    return list(range(6))
+                    def qubits(self):
+                        return list(range(6))
 
-                def device_name(self):
-                    return "Yukon"
-<<<<<<< HEAD
-            ...
-=======
->>>>>>> 07572de34a34dd9bf7983e36a48840d354bb88de
+                    def device_name(self):
+                        return "Yukon"
+    <<<<<<< HEAD
+                ...
+    =======
+    >>>>>>> 07572de34a34dd9bf7983e36a48840d354bb88de
     """
 
     @abstractmethod
