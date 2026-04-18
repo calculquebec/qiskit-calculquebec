@@ -3,15 +3,13 @@ from qiskit_calculquebec.backends.monarq_backend import MonarQBackend as MyBacke
 
 
 class CalculQuebecProvider:
-    """
-    Provider for Calcul Québec quantum backends.
+    """Provider for Calcul Québec quantum backends.
 
     This class manages available backends and provides access by name or filters.
     """
 
     def __init__(self, token=None):
-        """
-        Initialize the provider.
+        """Initialize the provider.
 
         Args:
             token (str, optional): API token for authentication.
@@ -21,8 +19,7 @@ class CalculQuebecProvider:
         self._backends = [MyBackend(provider=self)]
 
     def get_backend(self, name):
-        """
-        Return a backend matching the given name.
+        """Return a backend matching the given name.
 
         Args:
             name (str): Name of the backend.
@@ -40,8 +37,7 @@ class CalculQuebecProvider:
         raise ValueError(f"No backend found with name: {name}")
 
     def backends(self, name=None, filters=None, **kwargs):
-        """
-        Return a list of available backends, optionally filtered by name or custom filters.
+        """Return a list of available backends, optionally filtered.
 
         Args:
             name (str, optional): Only return backends matching this name.
@@ -49,7 +45,7 @@ class CalculQuebecProvider:
             **kwargs: Additional arguments passed to filter_backends.
 
         Returns:
-            List[Backend]: List of matching backends.
+            list[Backend]: List of matching backends.
         """
         backends = self._backends
 

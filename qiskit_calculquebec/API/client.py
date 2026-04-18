@@ -1,76 +1,72 @@
 """
-Contains base client class and implementations. \n
-MonarQ users will mostly use MonarqClient.
+API client classes for Calcul Québec quantum backends.
+
+``CalculQuebecClient`` is the primary client for connecting to MonarQ/Yukon.
+``MonarqClient`` is a deprecated alias kept for backwards compatibility.
 """
 
 
 class ProjectParameterError(ValueError):
-    """
-    Exception raised when project parameter validation fails.
+    """Raised when project parameter validation fails in a client constructor.
 
-    This is a specialized ValueError that can be raised for various
-    project parameter validation scenarios in client constructors.
-    The specific error message is provided when the exception is raised.
-
-    Args:
-        message (str): A descriptive error message explaining the validation failure.
-
-    Example:
-        raise ProjectParameterError("Either project_name or project_id must be provided")
-        raise ProjectParameterError("Invalid project_id format")
+    Either ``project_name`` or ``project_id`` must be provided, but not both.
     """
 
     pass
 
 
 class ApiClient:
-    """
-    data object that is used to pass client information to CalculQCDevice
+    """Data container holding authentication and routing information for the API.
 
-    Args :
-        host (str) : the server address for the machine
-        user (str) : the users identifier
-        access_token (str) : the unique access key provided to the user
-        realm (str) : the organisational group associated with the machine
-        machine_name (str) : the name of the machine
-        project_name (str) : the name of the project
-        project_id (str) : the ID of the project
-        circuit_name (str) : the name of the circuit to use for the job
+    Either ``project_name`` or ``project_id`` must be supplied. If both are
+    provided, ``project_id`` takes precedence and ``project_name`` is ignored.
+
+    Args:
+        host (str): Base URL of the Thunderhead server (e.g. ``"https://..."``).
+        user (str): User identifier (username).
+        access_token (str): API access token for authentication.
+        realm (str): Organizational realm associated with the machine.
+        project_name (str): Name of the project. Resolved to a project ID at
+            initialization. Mutually exclusive with ``project_id``.
+        project_id (str): Direct project ID. Mutually exclusive with
+            ``project_name``.
+        circuit_name (str): Label attached to submitted circuits.
+            Default: ``"none"``.
     """
 
     @property
-    def project_name(self):
-        """Returns the project name."""
+    def project_name(self) -> str:
+        """Project name used for ID resolution."""
         return self._project_name
 
     @property
-    def project_id(self):
-        """Returns the project ID."""
+    def project_id(self) -> str:
+        """Project ID used in job submission requests."""
         return self._project_id
 
     @project_id.setter
     def project_id(self, value: str):
-        """Sets the project ID."""
+        """Set the project ID."""
         self._project_id = value
 
     @property
-    def circuit_name(self):
-        """Returns the circuit name."""
+    def circuit_name(self) -> str:
+        """Circuit label attached to submitted jobs."""
         return self._circuit_name
 
     @circuit_name.setter
     def circuit_name(self, value: str):
-        """Sets the circuit name."""
+        """Set the circuit name."""
         self._circuit_name = value
 
     @property
-    def machine_name(self):
-        """Returns the machine name."""
+    def machine_name(self) -> str:
+        """Name of the target quantum machine."""
         return self._machine_name
 
     @machine_name.setter
     def machine_name(self, value: str):
-        """Sets the machine name."""
+        """Set the machine name."""
         self._machine_name = value
 
     def __init__(
@@ -83,14 +79,12 @@ class ApiClient:
         project_id: str = "",
         circuit_name: str = "none",
     ):
-        # Validation of project_name and project_id parameters
         if project_name == "" and project_id == "":
             raise ProjectParameterError(
-                "Either project_name or project_id must be provided"
+                "Either project_name or project_id must be provided."
             )
-
         if project_name != "" and project_id != "":
-            # If both are provided, use only project_id
+            # project_id takes precedence when both are given
             project_name = ""
 
         self.host = host
@@ -104,27 +98,28 @@ class ApiClient:
 
 
 class CalculQuebecClient(ApiClient):
-    """
-    specialization of Client for Calcul Quebec infrastructures
+    """Client for Calcul Québec quantum infrastructure.
 
-    Args :
-        host (str) : the server address for the machine
-        user (str) : the users identifier
-        access_token (str) : the unique access key provided to the user
-        project_name (str) : the name of the project (exclusive with project_id)
-        project_id (str) : the ID of the project (exclusive with project_name)
-        circuit_name (str) : the name of the circuit to use for the job
+    Specializes ``ApiClient`` with the ``"calculqc"`` realm and a simplified
+    constructor signature (no ``realm`` argument required).
 
+    Args:
+        host (str): Base URL of the Thunderhead server.
+        user (str): User identifier.
+        access_token (str): API access token.
+        project_name (str): Project name (mutually exclusive with ``project_id``).
+        project_id (str): Project ID (mutually exclusive with ``project_name``).
+        circuit_name (str): Label for submitted circuits. Default: ``"none"``.
     """
 
     def __init__(
         self,
-        host,
-        user,
-        access_token,
-        project_name="",
-        project_id="",
-        circuit_name="none",
+        host: str,
+        user: str,
+        access_token: str,
+        project_name: str = "",
+        project_id: str = "",
+        circuit_name: str = "none",
     ):
         super().__init__(
             host,
@@ -138,29 +133,29 @@ class CalculQuebecClient(ApiClient):
 
 
 class MonarqClient(CalculQuebecClient):
+    """Deprecated alias for ``CalculQuebecClient``.
+
+    .. deprecated::
+        Use ``CalculQuebecClient`` instead. This class will be removed in a
+        future release.
+
+    Args:
+        host (str): Base URL of the Thunderhead server.
+        user (str): User identifier.
+        access_token (str): API access token.
+        project_name (str): Project name (mutually exclusive with ``project_id``).
+        project_id (str): Project ID (mutually exclusive with ``project_name``).
+        circuit_name (str): Label for submitted circuits. Default: ``"none"``.
     """
-    specialization of CalculQuebecClient for MonarQ infrastructure
-
-    Args :
-        host (str) : the server address for the machine
-        user (str) : the users identifier
-        access_token (str) : the unique access key provided to the user
-        project_name (str) : the name of the project (exclusive with project_id)
-        project_id (str) : the ID of the project (exclusive with project_name)
-        circuit_name (str) : the name of the circuit to use for the job
-
-    """
-
-    # FIXME : deprecate this class in favor of CalculQuebecClient
 
     def __init__(
         self,
-        host,
-        user,
-        access_token,
-        project_name="",
-        project_id="",
-        circuit_name="none",
+        host: str,
+        user: str,
+        access_token: str,
+        project_name: str = "",
+        project_id: str = "",
+        circuit_name: str = "none",
     ):
         super().__init__(
             host,
@@ -173,7 +168,8 @@ class MonarqClient(CalculQuebecClient):
         import warnings
 
         warnings.warn(
-            "MonarqClient is deprecated and will be removed in a future release. Use CalculQuebecClient instead.",
+            "MonarqClient is deprecated and will be removed in a future release. "
+            "Use CalculQuebecClient instead.",
             DeprecationWarning,
             stacklevel=2,
-        ),
+        )
