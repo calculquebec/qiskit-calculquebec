@@ -1,12 +1,7 @@
-{{ fullname | escape | underline }}
+{{ fullname.replace('qiskit_calculquebec.', '') | escape | underline }}
 
 .. automodule:: {{ fullname }}
-    :members:
-    :undoc-members:
-    :inherited-members:
-    :show-inheritance:
-    :special-members: __init__
-    :private-members:
+
 
 {% if modules %}
 Submodules

@@ -1,4 +1,4 @@
-{{ fullname | escape | underline }}
+{{ name | escape | underline }}
 
 .. autoclass:: {{ fullname }}
    :show-inheritance:
@@ -14,7 +14,7 @@
 
    .. raw:: html
 
-      <a class="attr-details-header collapse-header" data-bs-toggle="collapse" href="#attrDetails-{{ collapse_id_suffix }}" role="button" aria-expanded="true" aria-controls="attrDetails-{{ collapse_id_suffix }}">
+      <a class="attr-details-header collapse-header collapsed" data-bs-toggle="collapse" href="#attrDetails-{{ collapse_id_suffix }}" role="button" aria-expanded="false" aria-controls="attrDetails-{{ collapse_id_suffix }}">
          <h2 style="font-size: 24px;">
             <i class="fas fa-angle-down rotate" style="float: right;"></i> Attributes
          </h2>
@@ -49,7 +49,7 @@
 
    .. raw:: html
 
-      <a class="meth-details-header collapse-header" data-bs-toggle="collapse" href="#methDetails-{{ collapse_id_suffix }}" role="button" aria-expanded="false" aria-controls="methDetails-{{ collapse_id_suffix }}">
+      <a class="meth-details-header collapse-header collapsed" data-bs-toggle="collapse" href="#methDetails-{{ collapse_id_suffix }}" role="button" aria-expanded="false" aria-controls="methDetails-{{ collapse_id_suffix }}">
          <h2 style="font-size: 24px;">
             <i class="fas fa-angle-down rotate" style="float: right;"></i> Methods
          </h2>
