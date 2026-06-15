@@ -158,7 +158,7 @@ def test_coupling_map(monarq_target):
 
 
 def test_name(monarq_target):
-    assert monarq_target.name == "MonarQ"
+    assert monarq_target.name == "yamaska"
 
 
 def test_qubit_properties(monarq_target):
