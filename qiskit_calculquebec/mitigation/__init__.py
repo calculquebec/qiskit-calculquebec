@@ -28,12 +28,15 @@ Installing optional dependencies
 
 import warnings as _warnings
 
+
 def _check_optional_deps():
     missing = []
     try:
         import mitiq  # noqa: F401
     except ImportError:
-        missing.append("mitiq  (required for ZNEMitigation, DDDMitigation, PauliTwirlingMitigation, ReadoutMitigation(method='matrix'))")
+        missing.append(
+            "mitiq  (required for ZNEMitigation, DDDMitigation, PauliTwirlingMitigation, ReadoutMitigation(method='matrix'))"
+        )
     try:
         import mthree  # noqa: F401
     except ImportError:
@@ -51,6 +54,7 @@ def _check_optional_deps():
             UserWarning,
             stacklevel=2,
         )
+
 
 _check_optional_deps()
 
