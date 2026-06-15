@@ -131,9 +131,9 @@ class MonarQ(AnyonTarget):
         and benchmark information from the API.
 
         Returns:
-            str: The device name ``"MonarQ"``.
+            str: The device name ``"yamaska"``.
         """
-        return "MonarQ"
+        return "yamaska"
 
     def __init__(self):
         """Initialize the MonarQ target.
