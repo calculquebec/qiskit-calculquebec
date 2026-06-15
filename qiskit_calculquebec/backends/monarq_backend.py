@@ -87,7 +87,7 @@ class MonarQBackend(Backend):
             self._client.machine_name = "yukon"
             self._target = Yukon()
         elif machine_name.lower() == "monarq":
-            self._client.machine_name = "monarq"
+            self._client.machine_name = "yamaska"
             self._target = MonarQ()
 
         self.name = self._target.name

@@ -7,8 +7,8 @@ from qiskit import QuantumCircuit
 
 from qiskit_calculquebec.mitigation.zne import ZNEMitigation
 
-
 # ── Fixtures ──────────────────────────────────────────────────────────────────
+
 
 @pytest.fixture
 def backend():
@@ -41,13 +41,17 @@ def mock_sampler_counts():
     sampler_mock = MagicMock()
     sampler_mock.run.return_value = job_mock
 
-    with patch("qiskit_calculquebec.mitigation.zne.SamplerV2", return_value=sampler_mock), \
-         patch("qiskit_calculquebec.mitigation.zne.generate_preset_pass_manager") as pm_mock:
+    with patch(
+        "qiskit_calculquebec.mitigation.zne.SamplerV2", return_value=sampler_mock
+    ), patch(
+        "qiskit_calculquebec.mitigation.zne.generate_preset_pass_manager"
+    ) as pm_mock:
         pm_mock.return_value.run.side_effect = lambda c: c
         yield sampler_mock
 
 
 # ── Constructor defaults ──────────────────────────────────────────────────────
+
 
 def test_default_scale_factors(backend):
     zne = ZNEMitigation(backend)
@@ -66,9 +70,11 @@ def test_default_shots(backend):
 
 # ── Executor type dispatch ────────────────────────────────────────────────────
 
+
 def test_executor_float_mode_no_annotation(backend):
     """Float executor must have no return annotation so mitiq treats it as FloatLike."""
     import inspect
+
     zne = ZNEMitigation(backend)
     executor = zne._make_executor()
     ann = inspect.getfullargspec(executor).annotations
@@ -80,6 +86,7 @@ def test_executor_measurement_result_mode_annotation(backend):
     import inspect
     from mitiq import MeasurementResult
     from mitiq import Observable, PauliString
+
     obs = Observable(PauliString("ZZ", support=[0, 1]))
     zne = ZNEMitigation(backend)
     executor = zne._make_executor(observable=obs)
@@ -88,6 +95,7 @@ def test_executor_measurement_result_mode_annotation(backend):
 
 
 # ── run_unmitigated ───────────────────────────────────────────────────────────
+
 
 def test_run_unmitigated_returns_float(backend, ghz, mock_sampler_counts):
     zne = ZNEMitigation(backend, shots=1000)
@@ -105,9 +113,11 @@ def test_run_unmitigated_p000(backend, ghz, mock_sampler_counts):
 
 # ── run ───────────────────────────────────────────────────────────────────────
 
+
 def test_run_uses_linear_factory_by_default(backend, ghz):
     """Default factory should be LinearFactory, not Richardson."""
     from mitiq.zne.inference import LinearFactory
+
     zne = ZNEMitigation(backend, scale_factors=[1.0, 2.0, 3.0])
     captured = {}
 
@@ -115,9 +125,9 @@ def test_run_uses_linear_factory_by_default(backend, ghz):
         captured["factory"] = kwargs.get("factory")
         return 0.5
 
-    with patch("mitiq.zne.execute_with_zne", side_effect=fake_execute_with_zne), \
-         patch("qiskit_calculquebec.mitigation.zne.generate_preset_pass_manager"), \
-         patch("qiskit_calculquebec.mitigation.zne.SamplerV2"):
+    with patch("mitiq.zne.execute_with_zne", side_effect=fake_execute_with_zne), patch(
+        "qiskit_calculquebec.mitigation.zne.generate_preset_pass_manager"
+    ), patch("qiskit_calculquebec.mitigation.zne.SamplerV2"):
         zne.run(ghz)
 
     assert isinstance(captured["factory"], LinearFactory)
@@ -125,6 +135,7 @@ def test_run_uses_linear_factory_by_default(backend, ghz):
 
 def test_run_uses_custom_factory(backend, ghz):
     from mitiq.zne.inference import RichardsonFactory
+
     factory = RichardsonFactory([1.0, 2.0, 3.0])
     zne = ZNEMitigation(backend, factory=factory)
     captured = {}
@@ -133,9 +144,9 @@ def test_run_uses_custom_factory(backend, ghz):
         captured["factory"] = kwargs.get("factory")
         return 0.5
 
-    with patch("mitiq.zne.execute_with_zne", side_effect=fake_execute_with_zne), \
-         patch("qiskit_calculquebec.mitigation.zne.generate_preset_pass_manager"), \
-         patch("qiskit_calculquebec.mitigation.zne.SamplerV2"):
+    with patch("mitiq.zne.execute_with_zne", side_effect=fake_execute_with_zne), patch(
+        "qiskit_calculquebec.mitigation.zne.generate_preset_pass_manager"
+    ), patch("qiskit_calculquebec.mitigation.zne.SamplerV2"):
         zne.run(ghz)
 
     assert captured["factory"] is factory
@@ -149,9 +160,9 @@ def test_run_strips_measurements(backend, ghz):
         captured["circuit"] = circuit
         return 0.5
 
-    with patch("mitiq.zne.execute_with_zne", side_effect=fake_execute_with_zne), \
-         patch("qiskit_calculquebec.mitigation.zne.generate_preset_pass_manager"), \
-         patch("qiskit_calculquebec.mitigation.zne.SamplerV2"):
+    with patch("mitiq.zne.execute_with_zne", side_effect=fake_execute_with_zne), patch(
+        "qiskit_calculquebec.mitigation.zne.generate_preset_pass_manager"
+    ), patch("qiskit_calculquebec.mitigation.zne.SamplerV2"):
         zne = ZNEMitigation(backend)
         zne.run(ghz)
 
@@ -159,9 +170,9 @@ def test_run_strips_measurements(backend, ghz):
 
 
 def test_run_returns_real_float(backend, ghz):
-    with patch("mitiq.zne.execute_with_zne", return_value=complex(0.85, -1e-17)), \
-         patch("qiskit_calculquebec.mitigation.zne.generate_preset_pass_manager"), \
-         patch("qiskit_calculquebec.mitigation.zne.SamplerV2"):
+    with patch("mitiq.zne.execute_with_zne", return_value=complex(0.85, -1e-17)), patch(
+        "qiskit_calculquebec.mitigation.zne.generate_preset_pass_manager"
+    ), patch("qiskit_calculquebec.mitigation.zne.SamplerV2"):
         zne = ZNEMitigation(backend)
         result = zne.run(ghz)
 
@@ -171,7 +182,10 @@ def test_run_returns_real_float(backend, ghz):
 
 # ── REM integration ───────────────────────────────────────────────────────────
 
-def test_run_unmitigated_raises_if_rem_without_qubits(backend, ghz, mock_sampler_counts):
+
+def test_run_unmitigated_raises_if_rem_without_qubits(
+    backend, ghz, mock_sampler_counts
+):
     rem = MagicMock()
     rem.method = "m3"
     zne = ZNEMitigation(backend)
@@ -195,13 +209,14 @@ def test_run_unmitigated_applies_rem_matrix(backend, ghz):
     sampler_mock = MagicMock()
     sampler_mock.run.return_value = job_mock
 
-    with patch("qiskit_calculquebec.mitigation.zne.SamplerV2", return_value=sampler_mock), \
-         patch("qiskit_calculquebec.mitigation.zne.generate_preset_pass_manager") as pm_mock:
+    with patch(
+        "qiskit_calculquebec.mitigation.zne.SamplerV2", return_value=sampler_mock
+    ), patch(
+        "qiskit_calculquebec.mitigation.zne.generate_preset_pass_manager"
+    ) as pm_mock:
         pm_mock.return_value.run.side_effect = lambda c: c
         zne = ZNEMitigation(backend, shots=1024)
         result = zne.run_unmitigated(ghz, rem=rem, qubits=[0, 1, 2])
 
     rem.apply_correction.assert_called_once()
     assert isinstance(result, float)
-
-
