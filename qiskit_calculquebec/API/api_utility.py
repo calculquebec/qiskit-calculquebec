@@ -164,7 +164,7 @@ class routes:
 class queries:
     """Query parameter prefixes used in Thunderhead API requests."""
 
-    MACHINE_NAME = "?machineName"
+    MACHINE_NAME = "?name"
     NAME = "?name"
 
 
@@ -180,7 +180,7 @@ class keys:
     QUBIT_COUNT = "qubitCount"
     OPERATIONS = "operations"
     CIRCUIT = "circuit"
-    MACHINE_NAME = "machineName"
+    MACHINE_NAME = "name"
     PROJECT_ID = "projectID"
     SHOT_COUNT = "shotCount"
     BITS = "bits"
