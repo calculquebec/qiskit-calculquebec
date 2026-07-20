@@ -39,11 +39,13 @@ _DEFAULT_FIDELITY = 1.0 - 2e-2  # default fidelity used when benchmark data is m
 
 # ── optional imports ───────────────────────────────────────────────────────
 
+
 def _require_mitiq():
     try:
         import mitiq  # noqa: F401
         from mitiq import MeasurementResult
         from mitiq.rem.inverse_confusion_matrix import mitigate_measurements
+
         return MeasurementResult, mitigate_measurements
     except ImportError:
         raise ImportError(
@@ -61,7 +63,15 @@ def _require_mthree():
         from mthree.classes import QuasiCollection
         from mthree.exceptions import M3Error
         import psutil
-        return _direct_solve, _cal_matrix, _iterative_solver, QuasiCollection, M3Error, psutil
+
+        return (
+            _direct_solve,
+            _cal_matrix,
+            _iterative_solver,
+            QuasiCollection,
+            M3Error,
+            psutil,
+        )
     except ImportError:
         raise ImportError(
             "mthree and psutil are required for method='m3'.\n"
@@ -147,8 +157,7 @@ class ReadoutMitigation:
             #   col 0 → prepared |0⟩: [P(0|0), P(1|0)]
             #   col 1 → prepared |1⟩: [P(0|1), P(1|1)]
             self.single_qubit_cals[q] = np.array(
-                [[p0,       1.0 - p1],
-                 [1.0 - p0, p1      ]],
+                [[p0, 1.0 - p1], [1.0 - p0, p1]],
                 dtype=np.float64,
             )
 
@@ -163,7 +172,8 @@ class ReadoutMitigation:
 
         logger.info(
             "Calibration loaded for %d qubits from the Anyon benchmark (%s).",
-            len(qubits), machine_name,
+            len(qubits),
+            machine_name,
         )
 
     def cals_from_matrices(self, matrices: list):
@@ -179,8 +189,7 @@ class ReadoutMitigation:
                 f"List length ({len(matrices)}) != num_qubits ({self.num_qubits})."
             )
         self.single_qubit_cals = [
-            np.asarray(m, dtype=np.float64) if m is not None else None
-            for m in matrices
+            np.asarray(m, dtype=np.float64) if m is not None else None for m in matrices
         ]
         self.faulty_qubits = _faulty_qubit_checker(self.single_qubit_cals)
 
@@ -199,7 +208,9 @@ class ReadoutMitigation:
             RuntimeError: If calibration has not been loaded yet.
         """
         if self.single_qubit_cals is None:
-            raise RuntimeError("Mitigator not calibrated. Call cals_from_system() first.")
+            raise RuntimeError(
+                "Mitigator not calibrated. Call cals_from_system() first."
+            )
         if qubits is None:
             qubits = range(self.num_qubits)
         result = []
@@ -247,7 +258,9 @@ class ReadoutMitigation:
                 requested qubit is not calibrated.
         """
         if self.single_qubit_cals is None:
-            raise RuntimeError("Mitigator not calibrated. Call cals_from_system() first.")
+            raise RuntimeError(
+                "Mitigator not calibrated. Call cals_from_system() first."
+            )
 
         missing = [q for q in qubits if self.single_qubit_cals[q] is None]
         if missing:
@@ -392,9 +405,14 @@ class ReadoutMitigation:
         """
         from time import perf_counter
 
-        _direct_solve, _cal_matrix, _iterative_solver, QuasiCollection, M3Error, psutil = (
-            _require_mthree()
-        )
+        (
+            _direct_solve,
+            _cal_matrix,
+            _iterative_solver,
+            QuasiCollection,
+            M3Error,
+            psutil,
+        ) = _require_mthree()
 
         counts = dict(counts)
         shots = sum(counts.values())
@@ -434,8 +452,10 @@ class ReadoutMitigation:
                 mit_counts.mitigation_overhead = gamma * gamma
             if details:
                 return mit_counts, {
-                    "method": "direct", "time": dur,
-                    "dimension": num_elems, "col_norms": col_norms,
+                    "method": "direct",
+                    "time": dur,
+                    "dimension": num_elems,
+                    "col_norms": col_norms,
                 }
             return mit_counts
 
@@ -448,7 +468,14 @@ class ReadoutMitigation:
             if details:
                 st = perf_counter()
                 mit_counts, col_norms, gamma = _iterative_solver(
-                    self, counts, qubits, distance, tol, max_iter, 1, _cb,
+                    self,
+                    counts,
+                    qubits,
+                    distance,
+                    tol,
+                    max_iter,
+                    1,
+                    _cb,
                     return_mitigation_overhead,
                 )
                 dur = perf_counter() - st
@@ -456,12 +483,21 @@ class ReadoutMitigation:
                 if gamma is not None:
                     mit_counts.mitigation_overhead = gamma * gamma
                 return mit_counts, {
-                    "method": "iterative", "time": dur,
-                    "dimension": num_elems, "iterations": iter_count[0],
+                    "method": "iterative",
+                    "time": dur,
+                    "dimension": num_elems,
+                    "iterations": iter_count[0],
                     "col_norms": col_norms,
                 }
             mit_counts, gamma = _iterative_solver(
-                self, counts, qubits, distance, tol, max_iter, 0, _cb,
+                self,
+                counts,
+                qubits,
+                distance,
+                tol,
+                max_iter,
+                0,
+                _cb,
                 return_mitigation_overhead,
             )
             mit_counts.shots = shots
@@ -470,7 +506,9 @@ class ReadoutMitigation:
             return mit_counts
 
         else:
-            raise ValueError(f"Invalid solver: {solver!r}. Choose 'auto', 'direct', or 'iterative'.")
+            raise ValueError(
+                f"Invalid solver: {solver!r}. Choose 'auto', 'direct', or 'iterative'."
+            )
 
     # ─────────────────────────────────────────────────────────────────────
     # Internal interface used by mthree solvers
@@ -485,7 +523,9 @@ class ReadoutMitigation:
         qubits = np.asarray(qubits, dtype=int)
         cals = np.zeros(4 * len(qubits), dtype=np.float32)
         for kk, qubit in enumerate(qubits[::-1]):
-            cals[4 * kk: 4 * kk + 4] = self.single_qubit_cals[qubit].astype(np.float32).ravel()
+            cals[4 * kk : 4 * kk + 4] = (
+                self.single_qubit_cals[qubit].astype(np.float32).ravel()
+            )
         return cals
 
     def reduced_cal_matrix(self, counts, qubits, distance=None):
@@ -509,6 +549,7 @@ class ReadoutMitigation:
 # Internal utility
 # ─────────────────────────────────────────────────────────────────────────
 
+
 def _faulty_qubit_checker(cals: list) -> list:
     """Return indices of qubits with inverted calibration (P(0|1) >= P(0|0)).
 
@@ -517,6 +558,7 @@ def _faulty_qubit_checker(cals: list) -> list:
     it was prepared in |0⟩ — indicating the readout is unreliable.
     """
     return [
-        idx for idx, cal in enumerate(cals)
+        idx
+        for idx, cal in enumerate(cals)
         if cal is not None and cal[0, 1] >= cal[0, 0]
     ]

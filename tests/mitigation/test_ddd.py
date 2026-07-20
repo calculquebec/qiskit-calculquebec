@@ -6,8 +6,8 @@ from qiskit import QuantumCircuit
 
 from qiskit_calculquebec.mitigation.ddd import DDDMitigation
 
-
 # ── Fixtures ──────────────────────────────────────────────────────────────────
+
 
 @pytest.fixture
 def backend():
@@ -38,13 +38,17 @@ def mock_sampler_counts():
     sampler_mock = MagicMock()
     sampler_mock.run.return_value = job_mock
 
-    with patch("qiskit_calculquebec.mitigation.ddd.SamplerV2", return_value=sampler_mock), \
-         patch("qiskit_calculquebec.mitigation.ddd.generate_preset_pass_manager") as pm_mock:
+    with patch(
+        "qiskit_calculquebec.mitigation.ddd.SamplerV2", return_value=sampler_mock
+    ), patch(
+        "qiskit_calculquebec.mitigation.ddd.generate_preset_pass_manager"
+    ) as pm_mock:
         pm_mock.return_value.run.side_effect = lambda c: c
         yield sampler_mock
 
 
 # ── Constructor ───────────────────────────────────────────────────────────────
+
 
 def test_invalid_rule(backend):
     with pytest.raises(ValueError, match="rule must be one of"):
@@ -69,9 +73,11 @@ def test_default_num_trials(backend):
 
 # ── Executor type dispatch ────────────────────────────────────────────────────
 
+
 def test_executor_float_no_annotation(backend):
     """Float executor must have no return annotation."""
     import inspect
+
     ddd = DDDMitigation(backend)
     executor = ddd._make_executor()
     ann = inspect.getfullargspec(executor).annotations
@@ -82,6 +88,7 @@ def test_executor_measurement_result_annotation(backend):
     """MeasurementResult executor must be correctly annotated."""
     import inspect
     from mitiq import MeasurementResult, Observable, PauliString
+
     obs = Observable(PauliString("ZZ", support=[0, 1]))
     ddd = DDDMitigation(backend)
     executor = ddd._make_executor(observable=obs)
@@ -90,6 +97,7 @@ def test_executor_measurement_result_annotation(backend):
 
 
 # ── run_unmitigated ───────────────────────────────────────────────────────────
+
 
 def test_run_unmitigated_returns_float(backend, idle_circuit, mock_sampler_counts):
     ddd = DDDMitigation(backend)
@@ -107,17 +115,20 @@ def test_run_unmitigated_p00(backend, idle_circuit, mock_sampler_counts):
 
 # ── run ───────────────────────────────────────────────────────────────────────
 
+
 def test_run_calls_execute_with_ddd(backend, idle_circuit):
     captured = {}
 
     def fake_execute_with_ddd(circuit, executor, rule, num_trials, **kwargs):
-        captured["rule_name"] = rule.__name__ if hasattr(rule, "__name__") else str(rule)
+        captured["rule_name"] = (
+            rule.__name__ if hasattr(rule, "__name__") else str(rule)
+        )
         captured["num_trials"] = num_trials
         return 0.85
 
-    with patch("mitiq.ddd.execute_with_ddd", side_effect=fake_execute_with_ddd), \
-         patch("qiskit_calculquebec.mitigation.ddd.generate_preset_pass_manager"), \
-         patch("qiskit_calculquebec.mitigation.ddd.SamplerV2"):
+    with patch("mitiq.ddd.execute_with_ddd", side_effect=fake_execute_with_ddd), patch(
+        "qiskit_calculquebec.mitigation.ddd.generate_preset_pass_manager"
+    ), patch("qiskit_calculquebec.mitigation.ddd.SamplerV2"):
         ddd = DDDMitigation(backend, rule="xyxy", num_trials=5)
         result = ddd.run(idle_circuit)
 
@@ -127,6 +138,7 @@ def test_run_calls_execute_with_ddd(backend, idle_circuit):
 
 def test_run_strips_measurements_with_observable(backend, idle_circuit):
     from mitiq import Observable, PauliString
+
     obs = Observable(PauliString("ZZ", support=[0, 1]))
     captured = {}
 
@@ -134,9 +146,9 @@ def test_run_strips_measurements_with_observable(backend, idle_circuit):
         captured["circuit"] = circuit
         return 0.85
 
-    with patch("mitiq.ddd.execute_with_ddd", side_effect=fake_execute_with_ddd), \
-         patch("qiskit_calculquebec.mitigation.ddd.generate_preset_pass_manager"), \
-         patch("qiskit_calculquebec.mitigation.ddd.SamplerV2"):
+    with patch("mitiq.ddd.execute_with_ddd", side_effect=fake_execute_with_ddd), patch(
+        "qiskit_calculquebec.mitigation.ddd.generate_preset_pass_manager"
+    ), patch("qiskit_calculquebec.mitigation.ddd.SamplerV2"):
         ddd = DDDMitigation(backend)
         ddd.run(idle_circuit, observable=obs)
 
@@ -144,9 +156,9 @@ def test_run_strips_measurements_with_observable(backend, idle_circuit):
 
 
 def test_run_returns_real_float(backend, idle_circuit):
-    with patch("mitiq.ddd.execute_with_ddd", return_value=complex(0.75, -1e-18)), \
-         patch("qiskit_calculquebec.mitigation.ddd.generate_preset_pass_manager"), \
-         patch("qiskit_calculquebec.mitigation.ddd.SamplerV2"):
+    with patch("mitiq.ddd.execute_with_ddd", return_value=complex(0.75, -1e-18)), patch(
+        "qiskit_calculquebec.mitigation.ddd.generate_preset_pass_manager"
+    ), patch("qiskit_calculquebec.mitigation.ddd.SamplerV2"):
         ddd = DDDMitigation(backend)
         result = ddd.run(idle_circuit)
 
@@ -156,7 +168,10 @@ def test_run_returns_real_float(backend, idle_circuit):
 
 # ── REM integration ───────────────────────────────────────────────────────────
 
-def test_run_unmitigated_raises_rem_without_qubits(backend, idle_circuit, mock_sampler_counts):
+
+def test_run_unmitigated_raises_rem_without_qubits(
+    backend, idle_circuit, mock_sampler_counts
+):
     rem = MagicMock()
     rem.method = "m3"
     ddd = DDDMitigation(backend)
@@ -165,6 +180,7 @@ def test_run_unmitigated_raises_rem_without_qubits(backend, idle_circuit, mock_s
 
 
 # ── Count key normalization ───────────────────────────────────────────────────
+
 
 def test_count_key_normalization(backend):
     """Multi-register counts with spaces ('0 0') should be normalized."""
@@ -180,8 +196,11 @@ def test_count_key_normalization(backend):
     qc.h(0)
     qc.measure_all()
 
-    with patch("qiskit_calculquebec.mitigation.ddd.SamplerV2", return_value=sampler_mock), \
-         patch("qiskit_calculquebec.mitigation.ddd.generate_preset_pass_manager") as pm_mock:
+    with patch(
+        "qiskit_calculquebec.mitigation.ddd.SamplerV2", return_value=sampler_mock
+    ), patch(
+        "qiskit_calculquebec.mitigation.ddd.generate_preset_pass_manager"
+    ) as pm_mock:
         pm_mock.return_value.run.side_effect = lambda c: c
         ddd = DDDMitigation(backend, shots=1000)
         executor = ddd._make_executor()
