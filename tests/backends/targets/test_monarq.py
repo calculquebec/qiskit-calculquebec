@@ -162,7 +162,7 @@ def test_name(monarq_target):
 
 
 def test_qubit_properties(monarq_target):
-    from qiskit.transpiler.target import QubitProperties
+    from qiskit.providers import QubitProperties
 
     qubit_props, gate_properties = monarq_target.__get_qubit_properties__()
     assert isinstance(qubit_props, list)

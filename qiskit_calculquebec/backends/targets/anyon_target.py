@@ -22,7 +22,7 @@ from qiskit.circuit.library import (
     Measure,
 )
 from qiskit.circuit import Parameter, Delay
-from qiskit.transpiler.target import QubitProperties
+from qiskit.providers import QubitProperties
 from qiskit.transpiler import InstructionProperties
 
 from qiskit_calculquebec.API.adapter import ApiAdapter
