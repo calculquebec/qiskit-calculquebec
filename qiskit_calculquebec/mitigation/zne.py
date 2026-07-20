@@ -7,7 +7,6 @@ Wraps the MonarQ executor and delegates extrapolation to mitiq.zne.
 modify the circuit after noise folding applied by mitiq.
 """
 
-
 try:
     from qiskit.transpiler.preset_passmanagers import generate_preset_pass_manager
     from qiskit_ibm_runtime import SamplerV2
@@ -19,6 +18,7 @@ except ImportError:
 def _require_mitiq_zne():
     try:
         from mitiq import zne
+
         return zne
     except ImportError:
         raise ImportError(
@@ -140,7 +140,12 @@ class ZNEMitigation:
                 if not isinstance(transpiled, list):
                     transpiled = [transpiled]
                 sampler = SamplerV2(mode=backend)
-                counts = sampler.run(transpiled, shots=shots).result()[0].join_data().get_counts()
+                counts = (
+                    sampler.run(transpiled, shots=shots)
+                    .result()[0]
+                    .join_data()
+                    .get_counts()
+                )
                 # Normalize multi-register keys (e.g. "0 0" → "00")
                 counts = {"".join(k.split()): v for k, v in counts.items()}
 
@@ -164,6 +169,7 @@ class ZNEMitigation:
                 return MeasurementResult(np.array(bitstrings, dtype=int))
 
         else:
+
             def executor(circuit):
                 # mitiq strips measurements before folding — re-add them if needed
                 circ = circuit.copy()
@@ -175,7 +181,12 @@ class ZNEMitigation:
                 if not isinstance(transpiled, list):
                     transpiled = [transpiled]
                 sampler = SamplerV2(mode=backend)
-                counts = sampler.run(transpiled, shots=shots).result()[0].join_data().get_counts()
+                counts = (
+                    sampler.run(transpiled, shots=shots)
+                    .result()[0]
+                    .join_data()
+                    .get_counts()
+                )
                 # Normalize multi-register keys (e.g. "0 0" → "00")
                 counts = {"".join(k.split()): v for k, v in counts.items()}
                 n = circuit.num_qubits
@@ -285,9 +296,11 @@ class ZNEMitigation:
         executor = self._make_executor(observable=observable)
 
         folded = [
-            zne.scaling.fold_gates_at_random(circuit, s)
-            if self.scale_noise is None
-            else self.scale_noise(circuit, s)
+            (
+                zne.scaling.fold_gates_at_random(circuit, s)
+                if self.scale_noise is None
+                else self.scale_noise(circuit, s)
+            )
             for s in self.scale_factors
         ]
 
