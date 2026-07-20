@@ -180,9 +180,7 @@ class ApiAdapter(object):
 
         converted = json.loads(res.text)
         projects = converted.get(keys.ITEMS, [])
-        matching_projects = [
-            p for p in projects if p.get(keys.NAME) == project_name
-        ]
+        matching_projects = [p for p in projects if p.get(keys.NAME) == project_name]
 
         if len(matching_projects) > 1:
             raise MultipleProjectsException(matching_projects)
